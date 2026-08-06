@@ -1,29 +1,11 @@
-
-
 import { createContext, useEffect, useState, useContext } from "react";
-import type { ReactNode } from "react";
 import { checkAuthStatus, loginUser ,userLogout ,signupUser } from "../helpers/api";
 
-type User ={
-    name:string;
-    email:string;
-    
-}
 
-type UserAuth={
-    isLoggedIn:boolean;
-    user:User | null;
+const AuthContext =createContext(null);
 
-    login:(email:string, password:string)=>Promise<void>;
-    signup:(name:string,email:string,password:string)=>Promise<void>;
-    logout:()=>Promise<void>;
-
-};
-
-const AuthContext =createContext<UserAuth | null>(null);
-
-export const AuthProvider =({children} : {children : ReactNode})=>{
-   const [user ,setUser] = useState<User | null>(null);
+export const AuthProvider =({children})=>{
+   const [user ,setUser] = useState(null);
    const [isLoggedIn , setIsLoggedIn] = useState(false);
 
 
@@ -42,7 +24,7 @@ export const AuthProvider =({children} : {children : ReactNode})=>{
 
    }, []);
 
-   const login =async(email:string,password:string)=>{ 
+   const login =async(email,password)=>{ 
     const data =await loginUser(email,password);
     if(data){
         setUser({email:data.email , name:data.name});
@@ -54,7 +36,7 @@ export const AuthProvider =({children} : {children : ReactNode})=>{
 
 
 
-    const signup =async(name:string,email:string,password:string)=>{ 
+    const signup =async(name,email,password)=>{ 
           const data =await signupUser(name,email,password);
     if(data){
         setUser({email:data.email , name:data.name});

@@ -11,10 +11,11 @@ const app = express();
 // Middleware 
 app.use(
   cors({
-    origin: "https://ai-chat-bot-cauj.onrender.com", 
+    origin: "https://ai-chat-bot-cauj.onrender.com",
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));

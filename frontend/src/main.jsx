@@ -1,10 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import App from "./App.tsx";
+import App from "./App";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContent.tsx";
+import { AuthProvider } from "./context/AuthContent";
 import {Toaster} from "react-hot-toast"
 import axios from "axios";
 
@@ -18,7 +18,7 @@ const theme = createTheme({
   },
 });
 
-createRoot(document.getElementById("root")!).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <BrowserRouter>

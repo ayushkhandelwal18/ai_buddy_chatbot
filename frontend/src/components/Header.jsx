@@ -71,5 +71,4 @@ function Header() {
   )
 }
 
-export default Header
- 
+export default Header;

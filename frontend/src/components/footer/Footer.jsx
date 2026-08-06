@@ -20,7 +20,7 @@ function Footer() {
   color: "#fff",
   lineHeight: 1.4
 }}>
-   🚀 Built with ❤️ and code by    
+    🚀 Built with ❤️ and code by    
   <span>
     <Link
       style={{ color: "#00ffcc", fontWeight: "bold", textDecoration: "underline" }}
@@ -39,4 +39,4 @@ function Footer() {
   );
 }
 
-export default Footer
+export default Footer;

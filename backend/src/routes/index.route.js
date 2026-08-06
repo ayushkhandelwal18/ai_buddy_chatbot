@@ -1,6 +1,6 @@
 import {Router } from 'express';
-import userRoutes from './user.route';
-import chatRoutes from './chat.route';
+import userRoutes from './user.route.js';
+import chatRoutes from './chat.route.js';
 
 const appRouter = Router();
 

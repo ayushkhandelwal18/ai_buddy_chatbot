@@ -1,7 +1,7 @@
 import {Router } from "express";
-import { verifyToken } from "../utils/token-manager";
-import { chatCompleteValidator, validate } from "../utils/validators";
-import { generateChatCompletion, sendALLChatstoUSer,deleteUserChats } from "../controllers/chat-controller";
+import { verifyToken } from "../utils/token-manager.js";
+import { chatCompleteValidator, validate } from "../utils/validators.js";
+import { generateChatCompletion, sendALLChatstoUSer,deleteUserChats } from "../controllers/chat-controller.js";
 
 
 const chatRoutes = Router();

@@ -28,4 +28,4 @@ return (
   );
 }
 
-export default Typinganimation
+export default Typinganimation;

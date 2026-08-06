@@ -1,11 +1,10 @@
-import User from '../models/user.model';
-import { Request, Response, NextFunction } from 'express';
-import { googleAI } from '../config/geminiconfig';
+import User from '../models/user.model.js';
+import { googleAI } from '../config/geminiconfig.js';
 
 // Node 22 me fetch built-in hai
 
 export const generateChatCompletion = async (
-  req: Request, res: Response, next: NextFunction
+  req, res, next
 ) => {
   const { message } = req.body;
 
@@ -83,9 +82,9 @@ User query: ${message}
 
 // -------------------- Send All Chats --------------------
 export const sendALLChatstoUSer = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+  req,
+  res,
+  next
 ) => {
   try {
     const user = await User.findById(res.locals.jwtData.id);
@@ -96,7 +95,7 @@ export const sendALLChatstoUSer = async (
       return res.status(401).send("Permissions didn't match");
     }
     return res.status(200).json({ message: "OK", chats: user.chats });
-  } catch (error: any) {
+  } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "ERROR", cause: error.message });
   }
@@ -104,9 +103,9 @@ export const sendALLChatstoUSer = async (
 
 // -------------------- Delete User Chats --------------------
 export const deleteUserChats = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+  req,
+  res,
+  next
 ) => {
   try {
     const user = await User.findById(res.locals.jwtData.id);
@@ -118,12 +117,11 @@ export const deleteUserChats = async (
     }
 
     // 1️Clear chats
-    //@ts-ignore
     user.chats = [];
     await user.save();
 
     return res.status(200).json({ message: "OK" });
-  } catch (error: any) {
+  } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "ERROR", cause: error.message });
   }

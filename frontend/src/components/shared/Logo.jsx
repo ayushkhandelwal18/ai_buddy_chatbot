@@ -1,10 +1,9 @@
-
 import { Link } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 
 function Logo() {
   return (
- <div
+  <div
       style={{
         display: "flex",
         marginRight: "auto",

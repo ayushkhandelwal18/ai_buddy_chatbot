@@ -3,11 +3,7 @@ import  { useEffect } from "react";
 import TypingAnim from "../components/typeranimation/Typinganimation";
 import Footer from "../components/footer/Footer";
 
-declare global {
-  interface Window {
-    hasWelcomed?: boolean;
-  }
-}
+
 
 function Home() {
   const theme = useTheme();
@@ -82,4 +78,4 @@ function Home() {
   );
 }
 
-export default Home
+export default Home;

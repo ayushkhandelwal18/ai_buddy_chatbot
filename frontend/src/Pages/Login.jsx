@@ -10,12 +10,12 @@ function Login() {
   const navigate = useNavigate();
   const auth = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const email = formData.get("email");
+    const password = formData.get("password");
 
     try {
       toast.loading("Signing In", { id: "login" });
@@ -23,10 +23,10 @@ function Login() {
       const res = await auth?.login(email, password);
 
       // If your API returns a message, you can show it dynamically
-      toast.success((res as any)?.message || "Signed In Successfully", {
+      toast.success(res?.message || "Signed In Successfully", {
         id: "login",
       });
-    } catch (error: any) {
+    } catch (error) {
       console.log("Login Error:", error);
 
       // Cover both API errors and network/axios errors

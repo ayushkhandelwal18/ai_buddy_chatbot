@@ -15,10 +15,6 @@ import {
 
 
 import toast from "react-hot-toast";
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
 
 
 
@@ -27,9 +23,9 @@ function Chat() {
   const navigate = useNavigate();
 
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef(null);
   const auth = useAuth();
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [chatMessages, setChatMessages] = useState([]);
 
 
    const handleSend = async () => {
@@ -40,7 +36,7 @@ function Chat() {
 
     inputRef.current.value = "";
 
-    const newMessage: Message = { role: "user", content };
+    const newMessage = { role: "user", content };
     setChatMessages((prev) => [...prev, newMessage]);
 
     try {
@@ -54,7 +50,7 @@ function Chat() {
     }
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event) => {
     if (event.key === "Enter") {
       handleSend();
     }
@@ -241,7 +237,6 @@ function Chat() {
           }}
         >
           {chatMessages.map((chat, index) => (
-            //@ts-ignore
             <ChatItem content={chat.content} role={chat.role} key={index} />
           ))}
         </Box>
@@ -279,4 +274,4 @@ function Chat() {
   );
 }
 
-export default Chat
+export default Chat;

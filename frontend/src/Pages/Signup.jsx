@@ -12,18 +12,18 @@ function Signup() {
   const auth = useAuth();
 
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const name = formData.get("name");
+    const email = formData.get("email");
+    const password = formData.get("password");
 try {
   toast.loading("Signing Up", { id: "signup" });
   const res = await auth?.signup(name, email, password);
- toast.success((res as any)?.message || "Signup Successfully", { id: "signup" });
-} catch (error: any) {
+  toast.success(res?.message || "Signup Successfully", { id: "signup" });
+} catch (error) {
   console.log("Signup Error:", error);
 
   // yaha dono case cover karne hai:
@@ -114,4 +114,4 @@ return (
   );
 }
 
-export default Signup
+export default Signup;

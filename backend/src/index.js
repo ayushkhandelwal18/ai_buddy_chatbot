@@ -6,6 +6,6 @@ import { connectToDatabase } from "./db/connection.js";
 const PORT = process.env.PORT || 3000;
 connectToDatabase()
   .then(() => {
-    app.listen(PORT, () => console.log("Server started & Connected To Database 🤟"));
+    app.listen(PORT, () => console.log("Server started & Connected To Database "));
   })
   .catch((err) => console.log(err));

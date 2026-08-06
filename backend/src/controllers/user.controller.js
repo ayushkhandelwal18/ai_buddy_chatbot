@@ -1,5 +1,4 @@
 import  User  from '../models/user.model.js';
-import { Request, Response, NextFunction } from 'express';
 import {hash,compare} from "bcrypt";
 import { createToken } from '../utils/token-manager.js';
 import { COOKIE_NAME } from '../utils/constant.js';
@@ -7,9 +6,9 @@ import { COOKIE_NAME } from '../utils/constant.js';
 
 
 export const getAllUsers = async (
-    req:Request,
-    res:Response,
-    next:NextFunction ) => {
+    req,
+    res,
+    next ) => {
  try{
     const users =await User.find();
     return res.status(200).json({
@@ -24,9 +23,9 @@ export const getAllUsers = async (
 };
 
 export const usersignup = async (
-    req:Request,
-    res:Response,
-    next:NextFunction ) => {
+    req,
+    res,
+    next ) => {
  try{
     const{name,email,password}=req.body;
 
@@ -87,9 +86,9 @@ res.cookie(COOKIE_NAME, token, {
 };
 
 export const userlogin = async (
-    req:Request,
-    res:Response,
-    next:NextFunction ) => {
+    req,
+    res,
+    next ) => {
  try{
     const{email,password}=req.body;
 
@@ -141,9 +140,9 @@ res.cookie(COOKIE_NAME, token, {
 
 
 export const verifyUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+  req,
+  res,
+  next
 ) => {
   try {
     //user token check
@@ -164,9 +163,9 @@ export const verifyUser = async (
 };
 
 export const userlogout = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+  req,
+  res,
+  next
 ) => {
   try {
     //user token check

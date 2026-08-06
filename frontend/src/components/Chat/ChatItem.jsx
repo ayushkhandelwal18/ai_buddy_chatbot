@@ -7,9 +7,9 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coldarkDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 // regex se saare code blocks detect karo
-function extractCodeBlocks(message: string) {
+function extractCodeBlocks(message) {
   const regex = /```(\w+)?\n([\s\S]*?)```/g;
-  const blocks: { lang: string; code: string }[] = [];
+  const blocks = [];
   let match;
 
   while ((match = regex.exec(message)) !== null) {
@@ -27,9 +27,6 @@ function extractCodeBlocks(message: string) {
 const ChatItem = ({
   content,
   role,
-}: {
-  content: string;
-  role: "user" | "assistant";
 }) => {
   const auth = useAuth();
   const codeBlocks = extractCodeBlocks(content);

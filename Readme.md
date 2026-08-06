@@ -11,7 +11,7 @@ A smart, reliable, and friendly AI chatbot built with the **MERN stack** + **Gem
 - **MongoDB** storage for user chats
 - **JWT** tokens & **HTTP‑Only cookies** for secure auth
 - **Auth-protected routes** with custom middleware
-- Modern **React** frontend (Vite + TypeScript + SWC)
+- Modern **React** frontend (Vite + JavaScript + SWC)
 - Beautiful, responsive chat UI (**Material UI**)
 - **React Hot Toast** for in-app feedback
 - **React Icons** for iconography
@@ -25,10 +25,10 @@ A smart, reliable, and friendly AI chatbot built with the **MERN stack** + **Gem
 ## 🧰 Tech Stack
 
 **Frontend:**  
-React · Vite · TypeScript · Material UI · React Hot Toast · React Icons · React Syntax Highlighter · React Type Animation
+React · Vite · JavaScript · Material UI · React Hot Toast · React Icons · React Syntax Highlighter · React Type Animation
 
 **Backend:**  
-Node.js · Express.js · TypeScript · express‑validator · cookie‑parser · JWT
+Node.js · Express.js · JavaScript (ES Modules) · express‑validator · cookie‑parser · JWT
 
 **Database:**  
 MongoDB Atlas (via Mongoose)
@@ -50,7 +50,7 @@ AI-Buddy/
 │   │   ├── models/
 │   │   ├── routes/
 │   │   ├── utils/
-│   │   └── index.ts, app.ts
+│   │   └── index.js, app.js
 │   └── package.json
 │
 ├── frontend/
@@ -60,7 +60,7 @@ AI-Buddy/
 │   │   ├── context/
 │   │   ├── helpers/
 │   │   ├── pages/
-│   │   └── app.tsx, app.css, main.tsx, index.css
+│   │   └── App.jsx, App.css, main.jsx, index.css
 │   ├── index.html
 │   └── package.json
 │
@@ -145,6 +145,6 @@ Feel free to open issues for suggestions or improvements.
 
 ## 🛠️ Customization
 
-Change the prompt in `chat.tsx` to personalize your chatbot’s behavior.
+Change the prompt in `chat-controller.js` to personalize your chatbot’s behavior.
 
 ---

@@ -1,12 +1,12 @@
 import axios from "axios";
 
-export const loginUser = async (email: string, password: string) => {
+export const loginUser = async (email, password) => {
 
    try{
       const res=await axios.post("/user/login", { email, password });
       return res.data;
    }
-catch (error: any) {
+catch (error) {
     // axios error hamesha ye shape me throw kar
     throw {
       response: {
@@ -21,11 +21,11 @@ catch (error: any) {
 
   
 
-export const signupUser = async (name: string, email: string, password: string) => {
+export const signupUser = async (name, email, password) => {
   try {
     const res = await axios.post("/user/signup", { name, email, password });
     return res.data;
-  } catch (error: any) {
+  } catch (error) {
     // axios error hamesha ye shape me throw kar
     throw {
       response: {
@@ -49,7 +49,7 @@ export const checkAuthStatus = async () => {
      return data;
 };
 
-export const sendChatRequest = async (message:string) => {
+export const sendChatRequest = async (message) => {
 
      const res=await axios.post("/chat/new" , {message});
 
