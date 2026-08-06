@@ -61,9 +61,9 @@ export const sendChatRequest = async (message) => {
      return data;
 };
 
-export const getUserChats = async () => {
+export const getUserChats = async (limit = 10, skip = 0) => {
 
-     const res=await axios.get("/chat/all-chats");
+     const res=await axios.get(`/chat/all-chats?limit=${limit}&skip=${skip}`);
 
      if(res.status !== 200){
         throw new Error("Unable to get all chats");

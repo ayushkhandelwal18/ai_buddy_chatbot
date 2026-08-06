@@ -9,6 +9,7 @@ A smart, reliable, and friendly AI chatbot built with the **MERN stack** + **Gem
 - Custom **user authentication & authorization**
 - Data validation with **express-validator** middleware
 - **MongoDB** storage for user chats
+- **Paginated chat loading** (loads the last 10 messages by default, with a "Load Older Messages" button to load more in chunks)
 - **JWT** tokens & **HTTP‑Only cookies** for secure auth
 - **Auth-protected routes** with custom middleware
 - Modern **React** frontend (Vite + JavaScript + SWC)
@@ -75,10 +76,17 @@ Create a `.env` file inside the **backend** folder:
 
 ```env
 PORT=3000
-MONGO_URI=your_mongodb_connection_string
+MONGO_URL=your_mongodb_connection_string
 JWT_SECRET=super_secret_key
 COOKIE_SECRET=another_secret_if_used
 GEMINI_API_KEY=your_gemini_api_key
+FRONTEND_URL=http://localhost:5173
+```
+
+Create a `.env` file inside the **frontend** folder:
+
+```env
+VITE_API_URL=http://localhost:3000/api/v1
 ```
 
 ---

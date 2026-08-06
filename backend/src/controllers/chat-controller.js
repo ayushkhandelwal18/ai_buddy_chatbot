@@ -73,7 +73,7 @@ User query: ${message}
     user.chats.push({ role: "assistant", content: reply });
     await user.save();
 
-    return res.status(200).json({ chats: user.chats });
+    return res.status(200).json({ chats: user.chats.slice(-10) }); // use to show last 10 messages
   } catch (error) {
     console.error("Gemini Error:", error);
     return res.status(500).json({ message: "Something went wrong" });
@@ -94,7 +94,19 @@ export const sendALLChatstoUSer = async (
     if (user._id.toString() !== res.locals.jwtData.id) {
       return res.status(401).send("Permissions didn't match");
     }
-    return res.status(200).json({ message: "OK", chats: user.chats });
+
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = parseInt(req.query.skip) || 0;
+    const totalChats = user.chats.length;
+    const start = Math.max(0, totalChats - skip - limit);
+    const end = Math.max(0, totalChats - skip);
+    const slicedChats = user.chats.slice(start, end);
+
+    return res.status(200).json({ 
+      message: "OK", 
+      chats: slicedChats, 
+      hasMore: start > 0 
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "ERROR", cause: error.message });

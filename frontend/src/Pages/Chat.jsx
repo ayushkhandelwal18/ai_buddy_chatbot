@@ -26,6 +26,7 @@ function Chat() {
   const inputRef = useRef(null);
   const auth = useAuth();
   const [chatMessages, setChatMessages] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
 
 
    const handleSend = async () => {
@@ -42,7 +43,14 @@ function Chat() {
     try {
       toast.loading("AI-Buddy is thinking...", { id: "chat" });
       const chatData = await sendChatRequest(content);
-      setChatMessages([...chatData.chats]);
+      const returnedChats = chatData.chats;
+      if (returnedChats && returnedChats.length >= 2) {
+        const officialUserMsg = returnedChats[returnedChats.length - 2];
+        const officialAssistantMsg = returnedChats[returnedChats.length - 1];
+        setChatMessages((prev) => [...prev.slice(0, -1), officialUserMsg, officialAssistantMsg]);
+      } else {
+        setChatMessages([...returnedChats]);
+      }
       toast.success("AI-Buddy replied!", { id: "chat" });
     } catch (error) {
       console.log(error);
@@ -56,6 +64,20 @@ function Chat() {
     }
   };
 
+  const handleLoadMore = async () => {
+    try {
+      toast.loading("Loading older messages...", { id: "loadmore" });
+      const skip = chatMessages.length;
+      const data = await getUserChats(10, skip);
+      setChatMessages((prev) => [...data.chats, ...prev]);
+      setHasMore(data.hasMore);
+      toast.success("Loaded older messages", { id: "loadmore" });
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to load older messages", { id: "loadmore" });
+    }
+  };
+
 
   //delete chats
   const handleDeleteChats = async () => {
@@ -63,6 +85,7 @@ function Chat() {
       toast.loading("Deleting Chats", { id: "deletechats" });
       await deleteUserChats();
       setChatMessages([]);
+      setHasMore(false);
       toast.success("Deleted Chats Successfully", { id: "deletechats" });
     } catch (error) {
       console.log(error);
@@ -74,9 +97,10 @@ function Chat() {
   useLayoutEffect(() => {
     if (auth?.isLoggedIn && auth.user) {
       toast.loading("Loading Chats", { id: "loadchats" });
-      getUserChats()
+      getUserChats(10, 0)
         .then((data) => {
           setChatMessages([...data.chats]);
+          setHasMore(data.hasMore);
           toast.success("Successfully loaded chats", { id: "loadchats" });
         })
         .catch((err) => {
@@ -236,6 +260,27 @@ function Chat() {
             scrollBehavior: "smooth",
           }}
         >
+          {hasMore && (
+            <Button
+              onClick={handleLoadMore}
+              sx={{
+                mx: "auto",
+                my: 2,
+                color: "#33ffcc",
+                borderColor: "#33ffcc",
+                textTransform: "none",
+                fontWeight: "600",
+                fontSize: "14px",
+                "&:hover": {
+                  bgcolor: "rgba(51, 255, 204, 0.1)",
+                  borderColor: "#33ffcc",
+                },
+              }}
+              variant="outlined"
+            >
+              Load Older Messages
+            </Button>
+          )}
           {chatMessages.map((chat, index) => (
             <ChatItem content={chat.content} role={chat.role} key={index} />
           ))}
