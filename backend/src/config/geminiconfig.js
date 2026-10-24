@@ -1,7 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "./rag.config.js";
 
 const geminiApiKey = process.env.GEMINI_API_KEY || "";
 

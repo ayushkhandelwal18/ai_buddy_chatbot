@@ -1,321 +1,212 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Box, Avatar, Typography, Button, IconButton } from "@mui/material";
-import { red } from "@mui/material/colors";
+import { useEffect, useMemo, useState } from "react";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
+import { useNavigate, useParams } from "react-router-dom";
+import { ChatProvider, useChat } from "../context/ChatContext";
 import { useAuth } from "../context/AuthContent";
-import ChatItem from "../components/Chat/ChatItem";
-import { IoMdSend } from "react-icons/io";
-import { useNavigate } from "react-router-dom";
+import Sidebar from "../components/chat/Sidebar";
+import TopBar from "../components/chat/TopBar";
+import MessageList from "../components/chat/MessageList";
+import EmptyState from "../components/chat/EmptyState";
+import Composer from "../components/chat/Composer";
+import MemoryDialog from "../components/chat/MemoryDialog";
 
+const SIDEBAR_WIDTH = 288;
 
-import {
-  deleteUserChats,
-  getUserChats,
-  sendChatRequest,
-} from "../helpers/api";
-
-
-import toast from "react-hot-toast";
-
-
-
-function Chat() {
-
-  const navigate = useNavigate();
-
-
-  const inputRef = useRef(null);
+/**
+ * The chat workspace: sidebar + conversation area.
+ */
+function ChatWorkspace() {
+  const { conversationId } = useParams();
   const auth = useAuth();
-  const [chatMessages, setChatMessages] = useState([]);
-  const [hasMore, setHasMore] = useState(false);
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
+  const {
+    conversations,
+    messages,
+    hasMoreMessages,
+    loadingMessages,
+    loadOlderMessages,
+    isStreaming,
+    isRegenerating,
+    streamingText,
+    sendMessage,
+    stopStreaming,
+    regenerate,
+    removeMessage,
+    attachments,
+  } = useChat();
 
-   const handleSend = async () => {
-    if (!inputRef.current) return; // Check for null
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
 
-    const content = inputRef.current.value;
-    if (!content.trim()) return;
-
-    inputRef.current.value = "";
-
-    const newMessage = { role: "user", content };
-    setChatMessages((prev) => [...prev, newMessage]);
-
-    try {
-      toast.loading("AI-Buddy is thinking...", { id: "chat" });
-      const chatData = await sendChatRequest(content);
-      const returnedChats = chatData.chats;
-      if (returnedChats && returnedChats.length >= 2) {
-        const officialUserMsg = returnedChats[returnedChats.length - 2];
-        const officialAssistantMsg = returnedChats[returnedChats.length - 1];
-        setChatMessages((prev) => [...prev.slice(0, -1), officialUserMsg, officialAssistantMsg]);
-      } else {
-        setChatMessages([...returnedChats]);
-      }
-      toast.success("AI-Buddy replied!", { id: "chat" });
-    } catch (error) {
-      console.log(error);
-      toast.error("AI-Buddy is unable to give an answer.", { id: "chat" });
-    }
-  };
-
-  const handleKeyDown = (event) => {
-    if (event.key === "Enter") {
-      handleSend();
-    }
-  };
-
-  const handleLoadMore = async () => {
-    try {
-      toast.loading("Loading older messages...", { id: "loadmore" });
-      const skip = chatMessages.length;
-      const data = await getUserChats(10, skip);
-      setChatMessages((prev) => [...data.chats, ...prev]);
-      setHasMore(data.hasMore);
-      toast.success("Loaded older messages", { id: "loadmore" });
-    } catch (error) {
-      console.log(error);
-      toast.error("Failed to load older messages", { id: "loadmore" });
-    }
-  };
-
-
-  //delete chats
-  const handleDeleteChats = async () => {
-    try {
-      toast.loading("Deleting Chats", { id: "deletechats" });
-      await deleteUserChats();
-      setChatMessages([]);
-      setHasMore(false);
-      toast.success("Deleted Chats Successfully", { id: "deletechats" });
-    } catch (error) {
-      console.log(error);
-      toast.error("Deleting chats failed", { id: "deletechats" });
-    }
-  };
-
-  //load chats on page load
-  useLayoutEffect(() => {
-    if (auth?.isLoggedIn && auth.user) {
-      toast.loading("Loading Chats", { id: "loadchats" });
-      getUserChats(10, 0)
-        .then((data) => {
-          setChatMessages([...data.chats]);
-          setHasMore(data.hasMore);
-          toast.success("Successfully loaded chats", { id: "loadchats" });
-        })
-        .catch((err) => {
-          console.log(err);
-          toast.error("Loading Failed", { id: "loadchats" });
-        });
-    }
-  }, [auth]);
-
+  // Redirect to the login page when the session is gone — but only after the
+  // initial auth check has finished, so a valid session is not interrupted.
   useEffect(() => {
-    if (!auth?.user) {
-      navigate("/login");
+    if (!auth) return;
+    if (auth.isAuthLoading) return;
+    if (!auth.isLoggedIn) {
+      navigate("/login", { replace: true });
     }
-  }, [auth]);
+  }, [auth, navigate]);
 
+  const activeConversation = useMemo(
+    () => conversations.find((conversation) => conversation.id === conversationId),
+    [conversations, conversationId]
+  );
+
+  const hasConversation = Boolean(conversationId);
+  const title = activeConversation?.title || (hasConversation ? "Chat" : "New chat");
+
+  const handleNewChat = () => {
+    navigate("/chat");
+    setMobileOpen(false);
+  };
+
+  const handleSelectConversation = (id) => {
+    navigate(`/chat/${id}`);
+  };
+
+  const handleSuggestion = (prompt) => {
+    sendMessage(prompt);
+  };
+
+  const busy = isStreaming || isRegenerating;
 
   return (
     <Box
       sx={{
         display: "flex",
-        flex: 1,
-        width: "100%",
         height: "100%",
-        mt: 3,
-        gap: 3,
+        minHeight: 0,
+        bgcolor: "background.default",
+        overflow: "hidden",
       }}
     >
+      {/* Desktop sidebar */}
       <Box
         sx={{
-          display: { md: "flex", xs: "none", sm: "none" },
-          flex: 0.2,
-          flexDirection: "column",
+          display: { xs: "none", md: "block" },
+          width: sidebarOpen ? SIDEBAR_WIDTH : 0,
+          transition: "width 220ms ease",
+          overflow: "hidden",
+          flexShrink: 0,
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            width: "100%",
-            height: "60vh",
-            bgcolor: "rgb(17,29,39)",
-            borderRadius: 5,
-            flexDirection: "column",
-            mx: 3,
-          }}
-        >
-
-
-
-   <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  {/* Avatar with initials */}
-  <Avatar
-    sx={{
-      mt: 1,
-      bgcolor: "white",
-      color: "black",
-      fontWeight: 800,
-      textTransform: "uppercase",
-      width: 62,
-      height: 62,
-      fontSize: 28,
-    }}
-  >
-    {auth?.user?.name
-      ? auth.user.name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-      : "?"}
-  </Avatar>
-
-  {/* Full name below avatar */}
-  <Typography sx={{ mt: 1, fontWeight: 700, fontSize: 20, textAlign: "center",  textTransform: "uppercase", }}>
-    {auth?.user?.name ? auth.user.name : "Unknown User"}
-  </Typography>
-</Box>
-
-
-         <Typography
-  sx={{
-    mx: "auto",
-    fontFamily: "Work Sans, sans-serif",
-    fontWeight: 100,
-    fontSize: { xs: 16, sm: 18, md: 20 },
-    textAlign: "center",
-    lineHeight: 1.6,
-    color: "#94b8dcff", 
-    mt: 2,
-   
-  }}
->
-  <span style={{ 
-    fontWeight: 700, 
-     color: "#33ffcc",
-    fontSize: "1.2em" 
-  }}>
-    Hey there! You are talking to <span style={{ fontStyle: "italic" }}>AI-Buddy</span>
-  </span>
-  <br />
-  <span style={{fontSize:8}}></span>
-  Your friendly, personal AI companion ready to help you learn, code, or just have fun.
-</Typography>
-
-
-
-          <Button
-            onClick={handleDeleteChats}
-            sx={{
-              width: "200px",
-              my: "auto",
-              color: "white",
-              fontWeight: "700",
-              borderRadius: 3,
-              mx: "auto",
-              bgcolor: red[300],
-              ":hover": {
-                bgcolor: red.A400,
-              },
-            }}
-          >
-            Clear Conversation
-          </Button>
+        <Box sx={{ width: SIDEBAR_WIDTH, height: "100%" }}>
+          <Sidebar
+            activeId={conversationId}
+            onClose={() => setSidebarOpen(false)}
+            onSelectConversation={handleSelectConversation}
+            onNewChat={handleNewChat}
+          />
         </Box>
       </Box>
 
-
-
+      {/* Mobile sidebar */}
       <Box
         sx={{
-          display: "flex",
-          flex: { md: 0.8, xs: 1, sm: 1 },
-          flexDirection: "column",
-          px: 3,
+          display: { xs: "block", md: "none" },
+          position: "fixed",
+          inset: 0,
+          zIndex: 1200,
+          pointerEvents: mobileOpen ? "auto" : "none",
         }}
       >
-        <Typography
+        <Box
+          onClick={() => setMobileOpen(false)}
           sx={{
-            fontSize: "40px",
-            color: "white",
-            mb: 2,
-            mx: "auto",
-            fontWeight: "500",
+            position: "absolute",
+            inset: 0,
+            bgcolor: "rgba(0,0,0,0.6)",
+            opacity: mobileOpen ? 1 : 0,
+            transition: "opacity 220ms ease",
           }}
-        >
-          Ask Anything to AI-Buddy
-        </Typography>
+        />
         <Box
           sx={{
-            width: "100%",
-            height: "60vh",
-            borderRadius: 3,
-            mx: "auto",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "scroll",
-            overflowX: "hidden",
-            overflowY: "auto",
-            scrollBehavior: "smooth",
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: SIDEBAR_WIDTH,
+            maxWidth: "85vw",
+            transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform 240ms ease",
+            boxShadow: mobileOpen ? "12px 0 40px rgba(0,0,0,0.45)" : "none",
           }}
         >
-          {hasMore && (
-            <Button
-              onClick={handleLoadMore}
-              sx={{
-                mx: "auto",
-                my: 2,
-                color: "#33ffcc",
-                borderColor: "#33ffcc",
-                textTransform: "none",
-                fontWeight: "600",
-                fontSize: "14px",
-                "&:hover": {
-                  bgcolor: "rgba(51, 255, 204, 0.1)",
-                  borderColor: "#33ffcc",
-                },
-              }}
-              variant="outlined"
-            >
-              Load Older Messages
-            </Button>
-          )}
-          {chatMessages.map((chat, index) => (
-            <ChatItem content={chat.content} role={chat.role} key={index} />
-          ))}
-        </Box>
-        <div
-          style={{
-            height: "10vh",
-            width: "100%",
-            borderRadius: 6,
-            backgroundColor: "rgba(45, 58, 73, 1)",
-            display: "flex",
-            margin: "auto",
-          }}
-        >
-          {" "}
-          <input
-            ref={inputRef}
-            type="text"
-              onKeyDown={handleKeyDown} // Added onKeyDown handler
-            style={{
-              width: "100%",
-              backgroundColor: "transparent",
-              padding: "30px",
-              border: "none",
-              outline: "none",
-              color: "white",
-              fontSize: "20px",
-            }}
+          <Sidebar
+            activeId={conversationId}
+            onClose={() => setMobileOpen(false)}
+            onSelectConversation={handleSelectConversation}
+            onNewChat={handleNewChat}
           />
-          <IconButton onClick={handleSend} sx={{ color: "white", mx: 1 }}>
-            <IoMdSend />
-          </IconButton>
-        </div>
+        </Box>
+      </Box>
+
+      {/* Conversation area */}
+      <MemoryDialog open={memoryOpen} onClose={() => setMemoryOpen(false)} />
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100%" }}>
+        <TopBar
+          title={title}
+          showMenuButton
+          onToggleSidebar={() =>
+            isDesktop ? setSidebarOpen((open) => !open) : setMobileOpen((open) => !open)
+          }
+          onNewChat={handleNewChat}
+          onOpenMemory={() => setMemoryOpen(true)}
+        />
+
+        {hasConversation ? (
+          <MessageList
+            messages={messages}
+            hasMore={hasMoreMessages}
+            loadingMore={loadingMessages}
+            onLoadMore={loadOlderMessages}
+            streamingText={streamingText}
+            isStreaming={isStreaming}
+            onRegenerate={regenerate}
+            onDelete={removeMessage}
+            isBusy={busy}
+          />
+        ) : (
+          <Box sx={{ flex: 1, overflowY: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <EmptyState onSuggestion={handleSuggestion} />
+          </Box>
+        )}
+        <Box sx={{ flexShrink: 0, px: { xs: 1.5, sm: 2, md: 3 }, pb: { xs: 1.5, md: 2 }, pt: 1,
+          borderTop: hasConversation ? "1px solid" : "none", borderColor: "divider" }}>
+          <Box sx={{ maxWidth: 820, mx: "auto" }}>
+            <Composer
+              attachments={attachments}
+              onSend={sendMessage}
+              onStop={stopStreaming}
+              isStreaming={isStreaming}
+              disabled={isRegenerating}
+              autoFocus={!hasConversation}
+              placeholder={hasConversation ? "Message AI-Buddy…" : "Ask AI-Buddy anything…"}
+            />
+          </Box>
+        </Box>
       </Box>
     </Box>
+  );
+}
+
+/**
+ * Route entry point — the active conversation lives in the URL
+ * (`/chat/:conversationId`) so it survives refreshes and can be linked.
+ */
+function Chat() {
+  const { conversationId } = useParams();
+
+  return (
+    <ChatProvider conversationId={conversationId}>
+      <ChatWorkspace />
+    </ChatProvider>
   );
 }
 

@@ -1,111 +1,130 @@
-import User from '../models/user.model.js';
-import { googleAI } from '../config/geminiconfig.js';
+import Conversation from "../models/conversation.model.js";
+import Message from "../models/message.model.js";
+import {
+  appendMessage,
+  getRecentMessages,
+  syncConversationMeta,
+  ensureConversationTitle,
+} from "../services/conversation.service.js";
+import { generateReply, HISTORY_LIMIT } from "../services/gemini.service.js";
+import { prepareMemoryTurn, memoryTurnStatus } from "../services/memory.service.js";
 
-// Node 22 me fetch built-in hai
+/**
+ * ---------------------------------------------------------------------------
+ * LEGACY CHAT ENDPOINTS
+ * ---------------------------------------------------------------------------
+ * These are the original `/api/v1/chat/*` routes. They are kept working (and
+ * unchanged in their request/response shape) so nothing that already uses the
+ * old API breaks.
+ *
+ * They now run on top of the new conversation/message collections and are
+ * mapped onto a single "legacy" conversation per user, which is also where
+ * the migration moves the old `user.chats` history.
+ */
 
-export const generateChatCompletion = async (
-  req, res, next
-) => {
+const getLegacyConversation = async (userId) => {
+  let conversation = await Conversation.findOne({ userId, isLegacy: true });
+  if (!conversation) {
+    conversation = await Conversation.create({
+      userId,
+      title: "Default Chat",
+      isLegacy: true,
+    });
+  }
+  return conversation;
+};
+
+/**
+ * POST /api/v1/chat/new
+ * Sends a message and returns the last 10 messages of the conversation.
+ */
+export const generateChatCompletion = async (req, res, next) => {
   const { message } = req.body;
 
   try {
-    const user = await User.findById(res.locals.jwtData.id);
-    if (!user) {
-      return res.status(401).json({ message: "User not registered OR Token malfunctioned" });
-    }
+    const userId = res.locals.jwtData.id;
+    const conversation = await getLegacyConversation(userId);
 
-    const chats = user.chats.map(({ role, content }) => ({ role, content }));
-    chats.push({ role: "user", content: message });
-    user.chats.push({ role: "user", content: message });
-
-    // Gemini 2.5 Flash
-   const geminiModel = googleAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        maxOutputTokens: 2048, // more space for code
-        temperature: 0.6,      // more deterministic
-      }
+    const history = await getRecentMessages(conversation._id, HISTORY_LIMIT);
+    const userMessage = await appendMessage({
+      conversationId: conversation._id,
+      userId,
+      role: "user",
+      content: message,
     });
-const prompt = `
-You are AI-Buddy, not a generic AI model.  
-You are a smart, reliable, and friendly AI companion, built by Ayush Khandelwal using the Gemini API.  
-Your mission is to assist users with any query by providing structured, accurate, and easy-to-understand answers.  
 
-📌 Identity Rules:
-- If the user greets ("Hello", "Hi", etc.), reply warmly:
-  Hello 👋, I’m AI-Buddy — your personal AI companion. How can I help you today?
-- If the user asks "Who are you?", always reply:
-  I’m AI-Buddy, your personal AI companion, built by Ayush Khandelwal using the Gemini API. I’m here to help you with anything you need — from coding and math to explanations, definitions, or just casual queries.
-- Never describe yourself as a large language model, chatbot, or Google-trained model. You are only AI-Buddy.  
+    const memoryContext = await prepareMemoryTurn({ userId, conversationId: conversation._id, userMessage, text: message });
+    const reply = await generateReply({ history, message, memoryContext });
 
-📌 Answering Guidelines:
-1. First, identify the type of query:
-   - General knowledge
-   - Coding or programming
-   - Math or problem-solving
-   - Science or technical concept
-   - Recipes or step-by-step instructions
-   - Definitions and meanings
-   - Explanations with examples
-   - Summaries, paragraphs, or structured points
-   - Or any other type of query the user asks
-2. Provide a clear, concise, and well-structured answer.
-3. Output formatting rules:
-   - Use plain text only.  
-   - Do not use bold, italics, markdown, or asterisks (*, **, etc.).  
-   - For lists, use dashes (-) or numbers (1., 2., 3.) without any extra symbols.  
-   - For code, wrap inside triple backticks (\`\`\`) with language name if applicable. 
-   -Give answer in paragraphs or structured points, as relevant. 
-4. Maintain a tone that is professional, friendly, and easy to follow.
-5. Avoid unnecessary repetition or filler — stay focused and helpful.
-6. Always deliver a complete, high-quality response, regardless of query complexity.
+    await appendMessage({
+      conversationId: conversation._id,
+      userId,
+      role: "assistant",
+      content: reply,
+    });
 
-💡 Remember: Stay helpful, versatile, and clear.  
-You are AI-Buddy, the personal AI companion created by Ayush Khandelwal. Respond only in plain text with proper structure and without markdown formatting.
-User query: ${message}
-`;
+    await ensureConversationTitle(conversation, message);
+    await syncConversationMeta(conversation._id);
 
+    // Same shape as before: the last 10 messages, oldest → newest.
+    const chats = await Message.find({ conversationId: conversation._id })
+      .sort({ _id: -1 })
+      .limit(10)
+      .lean();
 
-
-   const result = await geminiModel.generateContent(prompt);
-    const reply = result.response.text() || "Sorry, no reply.";
-
-    user.chats.push({ role: "assistant", content: reply });
-    await user.save();
-
-    return res.status(200).json({ chats: user.chats.slice(-10) }); // use to show last 10 messages
+    return res.status(200).json({ chats: chats.reverse().map(toLegacyChat), memory: memoryTurnStatus(memoryContext) });
   } catch (error) {
     console.error("Gemini Error:", error);
-    return res.status(500).json({ message: "Something went wrong" });
+    const providerDown =
+      error?.status === 429 ||
+      /429|quota|RESOURCE_EXHAUSTED|fetch failed/i.test(error?.message || "");
+    return res.status(providerDown ? 503 : 500).json({
+      message: providerDown
+        ? "The AI provider is unavailable right now. Please try again."
+        : "Something went wrong",
+    });
   }
 };
 
-// -------------------- Send All Chats --------------------
-export const sendALLChatstoUSer = async (
-  req,
-  res,
-  next
-) => {
+/**
+ * Maps a stored message back to the original `{ id, role, content }` shape
+ * that the legacy endpoints used to return.
+ */
+const toLegacyChat = (chat) => ({
+  id: chat.legacyId || chat._id?.toString(),
+  role: chat.role,
+  content: chat.content,
+});
+
+/**
+ * GET /api/v1/chat/all-chats?limit=&skip=
+ * Pagination counts backwards from the newest message, exactly like before.
+ */
+export const sendALLChatstoUSer = async (req, res, next) => {
   try {
-    const user = await User.findById(res.locals.jwtData.id);
-    if (!user) {
-      return res.status(401).send("User not registered OR Token malfunctioned");
-    }
-    if (user._id.toString() !== res.locals.jwtData.id) {
-      return res.status(401).send("Permissions didn't match");
-    }
+    const userId = res.locals.jwtData.id;
+    const conversation = await getLegacyConversation(userId);
 
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = parseInt(req.query.skip) || 0;
-    const totalChats = user.chats.length;
-    const start = Math.max(0, totalChats - skip - limit);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
+    const skip = Math.max(parseInt(req.query.skip) || 0, 0);
+
+    const totalChats = await Message.countDocuments({
+      conversationId: conversation._id,
+    });
+
     const end = Math.max(0, totalChats - skip);
-    const slicedChats = user.chats.slice(start, end);
+    const start = Math.max(0, end - limit);
 
-    return res.status(200).json({ 
-      message: "OK", 
-      chats: slicedChats, 
-      hasMore: start > 0 
+    const chats = await Message.find({ conversationId: conversation._id })
+      .sort({ _id: 1 })
+      .skip(start)
+      .limit(end - start)
+      .lean();
+
+    return res.status(200).json({
+      message: "OK",
+      chats: chats.map(toLegacyChat),
+      hasMore: start > 0,
     });
   } catch (error) {
     console.log(error);
@@ -113,24 +132,17 @@ export const sendALLChatstoUSer = async (
   }
 };
 
-// -------------------- Delete User Chats --------------------
-export const deleteUserChats = async (
-  req,
-  res,
-  next
-) => {
+/**
+ * DELETE /api/v1/chat/delete
+ * Clears every message of the legacy conversation.
+ */
+export const deleteUserChats = async (req, res, next) => {
   try {
-    const user = await User.findById(res.locals.jwtData.id);
-    if (!user) {
-      return res.status(401).send("User not registered OR Token malfunctioned");
-    }
-    if (user._id.toString() !== res.locals.jwtData.id) {
-      return res.status(401).send("Permissions didn't match");
-    }
+    const userId = res.locals.jwtData.id;
+    const conversation = await getLegacyConversation(userId);
 
-    // 1️Clear chats
-    user.chats = [];
-    await user.save();
+    await Message.deleteMany({ conversationId: conversation._id });
+    await syncConversationMeta(conversation._id);
 
     return res.status(200).json({ message: "OK" });
   } catch (error) {
