@@ -1,69 +1,33 @@
-# React + TypeScript + Vite
+# AI-Buddy frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite client for the existing AI-Buddy API. See the [project README](../Readme.md) for backend setup, environment variables, API contracts, PDF RAG, and persistent memory.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Copy `.env.example` to a local `.env` and set `VITE_API_URL` to the API origin including `/api/v1`. Keep it aligned with the backend's `FRONTEND_URL` cookie/CORS configuration. Never place provider or database secrets in Vite variables.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Checks and production output
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm run lint
+npm run build
 ```
+
+Vite writes the production build to ignored `dist/`. The `public/_redirects` SPA fallback supports hosts that recognize that format; configure the equivalent fallback on other hosts.
+
+## Source map
+
+- `src/App.jsx`: existing public and protected workspace routes.
+- `src/theme.js`: shared dark Material UI theme.
+- `src/public.css` and `src/public-theme.css`: public layouts and styles derived from the chat theme.
+- `src/components/public/`: shared brand, preview, and login/signup forms.
+- `src/components/chat/`: active workspace, attachments, sources, and memory management.
+- `src/context/`: authentication, conversations, streaming, and PDF attachment state.
+- `src/helpers/api.js`: active REST helpers and POST SSE transport.
+
+Login/signup use the existing email/password cookie session. The workspace uses the conversation/message API; the backend still retains its older chat endpoints for compatibility. The frontend does not need those legacy transport wrappers.

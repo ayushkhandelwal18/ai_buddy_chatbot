@@ -1,42 +1,10 @@
-// import React from "react";
 import { Link } from "react-router-dom";
+import { FaGithub } from "react-icons/fa";
+import Brand from "../public/Brand";
 
-
-function Footer() {
-  return (
-    <footer>
-      <div
-        style={{
-          width: "100%",
-          minHeight: "20vh",
-          maxHeight: "30vh",
-          marginTop: 60,
-        }}
-      >
-   <p style={{
-  fontSize: "clamp(16px, 2vw, 28px)",
-  textAlign: "center",
-  padding: "1rem",
-  color: "#fff",
-  lineHeight: 1.4
-}}>
-    🚀 Built with ❤️ and code by    
-  <span>
-    <Link
-      style={{ color: "#00ffcc", fontWeight: "bold", textDecoration: "underline" }}
-      className="nav-link"
-      to={"https://github.com/ayushkhandelwal18"}
-    >
-      Ayush Khandelwal
-    </Link>
-  </span>
-  👨‍💻 |  Full-Stack Developer & AI Enthusiast 
-</p>
-
-
-      </div>
-    </footer>
-  );
+export default function Footer() {
+  return <footer className="public-footer public-container">
+    <div className="footer-top"><div><Brand /><p>A conversation with your documents.<br />A clearer way forward.</p></div><nav aria-label="Footer navigation"><a href="/#features">Features</a><a href="/#how-it-works">How it works</a><Link to="/login">Log in</Link><a href="https://github.com/ayushkhandelwal18/AI-Chat-Bot" target="_blank" rel="noopener noreferrer"><FaGithub /> GitHub</a></nav></div>
+    <div className="footer-bottom"><span>© {new Date().getFullYear()} AI-Buddy. Built with curiosity.</span><span>Created by <a href="https://github.com/ayushkhandelwal18" target="_blank" rel="noopener noreferrer">Ayush Khandelwal</a></span></div>
+  </footer>;
 }
-
-export default Footer;

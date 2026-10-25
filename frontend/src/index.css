@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Tektur:wght@400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 
 
@@ -22,60 +22,9 @@ html,body,#root{
   overflow:hidden;
 }
 
-.image-inverted{
-  filter:invert(100%);
-}
-
-.nav-link{
- font-weight: 600;
- text-transform: uppercase;
- margin-right:10px;
- margin-left:10px;
- padding: 8px 20px;
- border-radius: 10px;
- text-decoration: none;
-letter-spacing: 1px;
-}
-
 .MuiOutlinedInput-input-root.Mui-focused,
 .MuiOutlinedInput-notchedOutline {
   border-color: white !important;
-}
-
-.tilt {
-  animation: tiltAnimation 3s infinite ease-in-out;
-}
-
-@keyframes tiltAnimation {
-  0% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(10deg); /* a bit right */
-  }
-  50% {
-    transform: rotate(0deg);
-  }
-  75% {
-    transform: rotate(-10deg); /* a bit left */
-  }
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
-
-.rotate {
-  animation: rotation 8s infinite linear;
-}
-
-@keyframes rotation {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(359deg);
-  }
 }
 
 /* ----------------------------- scrollbars ------------------------------- */

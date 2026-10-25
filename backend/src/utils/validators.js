@@ -14,21 +14,28 @@ export const validate = (validations) => {
     if (errors.isEmpty()) {
       return next();
     }
-    return res.status(422).json({ errors: errors.array() });
+    return res.status(422).json({ errors: errors.array().map(({ msg, path, location, type }) => ({ msg, path, location, type })) });
   };
 };
 
 export const loginValidator = [
-  body("email").trim().isEmail().withMessage("Invalid email format"),
+  body("email").isString().withMessage("Email is required").bail().trim()
+    .isLength({ max: 254 }).isEmail().withMessage("Enter a valid email address"),
   body("password")
+    .isString().withMessage("Password is required").bail()
+    // Preserve existing password trimming so stored accounts keep working.
     .trim()
     .isLength({ min: 6 })
-    .withMessage("Password should be at least 6 characters long"),
+    .withMessage("Password must contain at least 6 characters"),
 ];
 
 export const signupValidator = [
-  body("name").notEmpty().withMessage("Name is required"),
+  body("name").isString().withMessage("Name is required").bail().trim()
+    .notEmpty().withMessage("Name is required").isLength({ max: 100 }).withMessage("Name must contain at most 100 characters"),
   ...loginValidator, //iska mtlb hai loginValidator ka sara code yaha aa jayega
+  // Reject bcrypt truncation for new accounts without locking out legacy logins.
+  body("password").custom((value) => typeof value === "string" && Buffer.byteLength(value, "utf8") <= 72)
+    .withMessage("Password is too long; use at most 72 UTF-8 bytes"),
 ];
 
 export const chatCompleteValidator = [

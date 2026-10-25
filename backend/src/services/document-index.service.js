@@ -31,7 +31,7 @@ export const ensureDocumentPayloadIndexes = async () => {
   }
 };
 
-export const chunkPointId = (documentId, chunkIndex) => {
+const chunkPointId = (documentId, chunkIndex) => {
   const hash = createHash("sha256").update(`${documentId}:${chunkIndex}`).digest("hex").slice(0, 32).split("");
   hash[12] = "5";
   hash[16] = "89ab"[parseInt(hash[16], 16) % 4];

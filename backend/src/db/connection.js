@@ -1,4 +1,4 @@
-import { connect, disconnect } from "mongoose";
+import { connect } from "mongoose";
 
 async function connectToDatabase() {
   try {
@@ -10,14 +10,4 @@ async function connectToDatabase() {
 }
 
 
-async function disconnectFromDatabase() {
-    try{
-        await disconnect();
-
-    }catch (error) {
-    console.log(error);
-    throw new Error("Cannot disconnect to MongoDb");
-  }
-}
-
-export{ connectToDatabase, disconnectFromDatabase };
+export { connectToDatabase };

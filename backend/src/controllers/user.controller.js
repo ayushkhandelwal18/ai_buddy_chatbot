@@ -1,197 +1,78 @@
-import  User  from '../models/user.model.js';
-import {hash,compare} from "bcrypt";
-import { createToken } from '../utils/token-manager.js';
-import { COOKIE_NAME } from '../utils/constant.js';
+import User from "../models/user.model.js";
+import { hash, compare } from "bcrypt";
+import { createToken } from "../utils/token-manager.js";
+import { COOKIE_NAME } from "../utils/constant.js";
 
-
-
-export const getAllUsers = async (
-    req,
-    res,
-    next ) => {
- try{
-    const users =await User.find();
-    return res.status(200).json({
-        status: "success",
-        message: "Users fetched successfully",
-        data: users});
-
- }catch(error){
-    console.log(error);
-    return res.status(200).json({message:"Error fetching users", error: error.message});    
- }
-};
-
-export const usersignup = async (
-    req,
-    res,
-    next ) => {
- try{
-    const{name,email,password}=req.body;
-
-    const exixstinguser =await User.findOne({email});
-    if(exixstinguser){
-        return res.status(401).json({message:"User already exists"});
-    }
-
-    const hashedPassword = await hash(password, 10); // Hashing the password
-
-    const users = new User({name,email,password:hashedPassword});
-    await users.save();
-
-    // Check if user was created successfully
-    // if (!users || !users._id) {
-    //     return res.status(500).json({message: "User creation failed"});
-    // }
-
-
- 
-    //agar purana token hai to clear krdo
-      res.clearCookie(COOKIE_NAME, {
-  httpOnly: true,
-  signed: true,
-  path: "/",
+const cookieOptions = () => ({
+  path: "/", httpOnly: true, signed: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 });
- 
+const publicUser = (user) => ({ name: user.name, email: user.email });
+const authUnavailable = (res, error) => {
+  // Database errors can contain credentials or submitted values.
+  console.error("[auth] Operation unavailable", { name: error?.name, code: typeof error?.code === "number" ? error.code : undefined });
+  return res.status(503).json({ message: "Authentication is temporarily unavailable. Please try again later." });
+};
+const issueSession = (res, user) => {
+  const token = createToken(String(user._id), user.email, "7d");
+  res.cookie(COOKIE_NAME, token, { ...cookieOptions(), expires: new Date(Date.now() + 7 * 86400000) });
+};
+const emailPattern = (email) => "^" + email.replace(/[.*+?^\$\{\}()|[\]\\]/g, "\\$&") + "$";
 
-    const token = createToken(users._id.toString(), users.email, "7d");
-    
-    const expires = new Date();
-    expires.setDate(expires.getDate()+7);
-  
-    //token genrate hojaye uper wale se  
-   //use cookie-parser for send token in cookie (backend to frontend)
-res.cookie(COOKIE_NAME, token, {
-  path: "/",
-  expires,
-  httpOnly: true,
-  signed: true,
-  secure: process.env.NODE_ENV === "production",  // prod me true hoga
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // local pe lax
-});
-
-
-    return res.status(201).json({
-        message: "User created successfully",
-        name: users.name,
-        email: users.email
-    });
-
- }catch(error){
-    console.log(error);
-    return res.status(200).json({message:"Error fetching users", cause:error.message});    
- }
+const findUserByEmail = async (email, withPassword = false) => {
+  const fields = withPassword ? "+password name email" : "name email";
+  // Keep existing mixed-case accounts and their IDs. New accounts use lowercase.
+  return await User.findOne({ email }).select(fields) ||
+    await User.findOne({ email: { $regex: emailPattern(email), $options: "i" } }).select(fields);
 };
 
-export const userlogin = async (
-    req,
-    res,
-    next ) => {
- try{
-    const{email,password}=req.body;
-
-    const exixstinguser =await User.findOne({email});
-    if(!exixstinguser){
-        return res.status(401).send({message:"User does not exists"});
-    }
-
-    const isPasswordValid =await compare(password , exixstinguser.password);
-    if(!isPasswordValid){
-        return res.status(403).send({message:"Invalid credentials"});
-    }
-
-
-    //agar purana token hai to clear krdo
-      res.clearCookie(COOKIE_NAME, {
-  httpOnly: true,
-  signed: true,
-  path: "/",
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-});
-
-    const token = createToken(exixstinguser._id.toString(), exixstinguser.email, "7d");
-    
-    const expires = new Date();
-    expires.setDate(expires.getDate()+7);
-  
-    //token genrate hojaye uper wale se  
-   //use cookie-parser for send token in cookie (backend to frontend)
-res.cookie(COOKIE_NAME, token, {
-  path: "/",
-  expires,
-  httpOnly: true,
-  signed: true,
-  secure: process.env.NODE_ENV === "production",  // prod me true hoga
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // local pe lax
-});
-     
-
-    return res.status(200).json({message:"Login successful", name:exixstinguser.name, email:exixstinguser.email,token});
-
-
-}catch(error){
-    console.log(error);
-    return res.status(200).json({message:"Error fetching users", error: error.message});    
- }
-};
-
-
-export const verifyUser = async (
-  req,
-  res,
-  next
-) => {
+// Retain the old route shape, but return only the authenticated account.
+export const getAllUsers = async (req, res) => {
   try {
-    //user token check
-    const user = await User.findById(res.locals.jwtData.id);
-    if (!user) {
-      return res.status(401).send("User not registered OR Token malfunctioned");
-    }
-    if (user._id.toString() !== res.locals.jwtData.id) {
-      return res.status(401).send("Permissions didn't match");
-    }
-    return res
-      .status(200)
-      .json({ message: "OK", name: user.name, email: user.email });
+    const user = await User.findById(res.locals.jwtData.id).select("name email");
+    if (!user) return res.status(401).json({ message: "Please sign in again." });
+    return res.status(200).json({ status: "success", message: "Account fetched successfully", data: [{ id: String(user._id), ...publicUser(user) }] });
+  } catch (error) { return authUnavailable(res, error); }
+};
+
+export const usersignup = async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    const email = req.body.email.toLowerCase();
+    if (await findUserByEmail(email)) return res.status(409).json({ message: "An account with this email already exists. Please log in." });
+    const user = await User.create({ name, email, password: await hash(password, 10) });
+    issueSession(res, user);
+    return res.status(201).json({ message: "Account created successfully", ...publicUser(user) });
   } catch (error) {
-    console.log(error);
-    return res.status(200).json({ message: "ERROR", cause: error.message });
+    // The unique email index also catches concurrent registrations.
+    if (error.code === 11000) return res.status(409).json({ message: "An account with this email already exists. Please log in." });
+    return authUnavailable(res, error);
   }
 };
 
-export const userlogout = async (
-  req,
-  res,
-  next
-) => {
+export const userlogin = async (req, res) => {
   try {
-    //user token check
-    const user = await User.findById(res.locals.jwtData.id);
-    if (!user) {
-      return res.status(401).send("User not registered OR Token malfunctioned");
+    const user = await findUserByEmail(req.body.email, true);
+    if (!user || !await compare(req.body.password, user.password)) {
+      return res.status(401).json({ message: "Email or password is incorrect." });
     }
-    if (user._id.toString() !== res.locals.jwtData.id) {
-      return res.status(401).send("Permissions didn't match");
-    }
-   
-    //clear cookies for logout
-          res.clearCookie(COOKIE_NAME, {
-  httpOnly: true,
-  signed: true,
-  path: "/",
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-});
+    issueSession(res, user);
+    // The JWT stays in the signed HTTP-only cookie, never in response JSON.
+    return res.status(200).json({ message: "Login successful", ...publicUser(user) });
+  } catch (error) { return authUnavailable(res, error); }
+};
 
+export const verifyUser = async (req, res) => {
+  try {
+    const user = await User.findById(res.locals.jwtData.id).select("name email");
+    if (!user) return res.status(401).json({ message: "Please sign in again." });
+    return res.status(200).json({ message: "OK", ...publicUser(user) });
+  } catch (error) { return authUnavailable(res, error); }
+};
 
-    return res
-      .status(200)
-      .json({ message: "OK", name: user.name, email: user.email });
-  } catch (error) {
-    console.log(error);
-    return res.status(200).json({ message: "ERROR", cause: error.message });
-  }
+export const userlogout = async (req, res) => {
+  // Ending an already authenticated session does not require a database lookup.
+  res.clearCookie(COOKIE_NAME, cookieOptions());
+  return res.status(200).json({ message: "OK" });
 };

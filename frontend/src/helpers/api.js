@@ -47,104 +47,32 @@ export const deletePdfDocument = async (id, signal) => {
   catch (error) { throw toApiError(error, "Unable to delete PDF"); }
 };
 
-export const loginUser = async (email, password) => {
+const validIdentity = (data) => typeof data?.name === "string" && !!data.name.trim() && typeof data?.email === "string" && !!data.email.trim();
 
-   try{
-      const res=await axios.post("/user/login", { email, password });
-      return res.data;
-   }
-catch (error) {
-    // axios error hamesha ye shape me throw kar
-    throw {
-      response: {
-        data: {
-          message: error.response?.data?.message || "Login Failed"
-        }
-      }
-    };
-  }
-};
-
-
-
-
-export const signupUser = async (name, email, password) => {
+const authenticate = async (url, payload, expectedStatus) => {
   try {
-    const res = await axios.post("/user/signup", { name, email, password });
-    return res.data;
-  } catch (error) {
-    // axios error hamesha ye shape me throw kar
-    throw {
-      response: {
-        data: {
-          message: error.response?.data?.message || "Signup Failed"
-        }
-      }
-    };
-  }
+    const response = await axios.post(url, payload, { withCredentials: true });
+    if (response.status !== expectedStatus || !validIdentity(response.data)) throw new Error("Unable to confirm your session. Please try again.");
+    return response.data;
+  } catch (error) { throw toApiError(error, "Unable to sign in"); }
 };
+
+export const loginUser = (email, password) => authenticate("/user/login", { email, password }, 200);
+export const signupUser = (name, email, password) => authenticate("/user/signup", { name, email, password }, 201);
 
 export const checkAuthStatus = async () => {
-
-     const res=await axios.get("/user/auth-status");
-
-     if(res.status !== 200){
-        throw new Error("Unable to authenticate user");
-     }
-
-     const data =await res.data;
-     return data;
+  const response = await axios.get("/user/auth-status", { withCredentials: true });
+  if (response.data?.message !== "OK" || !validIdentity(response.data)) throw new Error("No active session");
+  return response.data;
 };
-
-export const sendChatRequest = async (message) => {
-
-     const res=await axios.post("/chat/new" , {message});
-
-     if(res.status !== 200){
-        throw new Error("Unable to send chat");
-     }
-
-     const data =await res.data;
-     return data;
-};
-
-export const getUserChats = async (limit = 10, skip = 0) => {
-
-     const res=await axios.get(`/chat/all-chats?limit=${limit}&skip=${skip}`);
-
-     if(res.status !== 200){
-        throw new Error("Unable to get all chats");
-     }
-
-     const data =await res.data;
-     return data;
-};
-
-
-
-export const deleteUserChats = async () => {
-
-     const res=await axios.delete("/chat/delete");
-
-     if(res.status !== 200){
-        throw new Error("Unable to delete chat");
-     }
-
-     const data =await res.data;
-     return data;
-};
-
 
 export const userLogout = async () => {
-
-     const res=await axios.get("/user/logout");
-
-     if(res.status !== 200){
-        throw new Error("Unable to logout");
-     }
-
-     const data =await res.data;
-     return data;
+  try { return (await axios.get("/user/logout", { withCredentials: true })).data; }
+  catch (error) {
+    // An expired session is already signed out.
+    if (error.response?.status === 401) return { message: "OK" };
+    throw toApiError(error, "Unable to log out. Please try again.");
+  }
 };
 
 /* ---------------------------------------------------------------------------
@@ -155,7 +83,7 @@ export const userLogout = async () => {
  * Normalises an axios/unknown error into a consistent shape that both
  * `error.message` and `error.response.data.message` can read.
  */
-export const toApiError = (error, fallback = "Request failed") => {
+const toApiError = (error, fallback = "Request failed") => {
   const message =
     error?.response?.data?.message ||
     error?.response?.data?.errors?.[0]?.msg ||
@@ -163,7 +91,9 @@ export const toApiError = (error, fallback = "Request failed") => {
     fallback;
 
   const wrapped = new Error(message);
-  wrapped.response = { data: { message } };
+  const errors = Array.isArray(error?.response?.data?.errors) ? error.response.data.errors.map(({ path, msg }) => ({ path, msg })) : [];
+  wrapped.fields = Object.fromEntries(errors.filter(({ path }) => typeof path === "string").map(({ path, msg }) => [path, msg]));
+  wrapped.response = { status: error?.response?.status, data: { message, errors } };
   return wrapped;
 };
 
@@ -232,15 +162,6 @@ export const getConversationMessages = async (
     return res.data;
   } catch (error) {
     throw toApiError(error, "Unable to load messages");
-  }
-};
-
-export const sendConversationMessage = async (conversationId, message, options = {}) => {
-  try {
-    const res = await axios.post(`/conversations/${conversationId}/messages`, { message, ...options });
-    return res.data;
-  } catch (error) {
-    throw toApiError(error, "Unable to send message");
   }
 };
 

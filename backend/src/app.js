@@ -1,6 +1,5 @@
 import express from 'express';
 import './config/rag.config.js';
-import morgan from 'morgan';
 import appRouter from './routes/index.route.js'; // Importing the router
 import cookieParser from 'cookie-parser';
 import cors from "cors";
@@ -19,10 +18,6 @@ app.use(
 
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
-
-// //remove it in production only use in development
-// app.use(morgan("dev")); // Logging middleware
-
 
 app.use("/api/v1",appRouter);
 

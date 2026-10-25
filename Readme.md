@@ -6,7 +6,7 @@ A basic chatbot sees the messages supplied in its current request. AI-Buddy addi
 
 Repository: [ayushkhandelwal18/AI-Chat-Bot](https://github.com/ayushkhandelwal18/AI-Chat-Bot). Additional implementation notes: [PDF RAG](backend/RAG.md) and [persistent memory](backend/MEMORY.md).
 
-> This README describes the checked-in implementation, not a guarantee of deployed service availability or answer accuracy. Review [security limitations](#security-and-data-isolation) before exposing the server publicly, particularly the existing unauthenticated user-list endpoint.
+> This README describes the checked-in implementation, not a guarantee of deployed service availability or answer accuracy. Review [security limitations](#security-and-data-isolation) before exposing the server publicly.
 
 ## Table of contents
 
@@ -71,6 +71,7 @@ The Express server waits for MongoDB connectivity before listening. Qdrant and e
 - Local conversation titles by default; optional Gemini titles.
 - Markdown, GFM tables/lists, syntax-highlighted code, and copy-code controls.
 - Responsive dark Material UI interface with a collapsible desktop sidebar and mobile overlay.
+- Landing, login, signup, and chat share the existing dark theme. A labeled illustrative preview presents document chat and RAG. Shared login/signup forms provide inline validation, password visibility, loading states, and signup password confirmation. Successful signup opens the existing workspace automatically. No OTP, OAuth, or password-reset flow is implemented.
 
 ### PDF question answering
 
@@ -107,7 +108,7 @@ The Express server waits for MongoDB connectivity before listening. Qdrant and e
 | Vector database client | `@qdrant/js-client-rest`, locked at 1.20.0 |
 | PDF processing | `pdfjs-dist` legacy ESM build in a Node worker thread |
 
-MongoDB can be local or hosted; the example URI uses Atlas. Qdrant accepts HTTP(S) REST endpoints and is intended to connect to the configured cluster. The installed `openai` dependency has no active call site in the inspected application services; this implementation uses Gemini.
+MongoDB can be local or hosted; the example URI uses Atlas. Qdrant accepts HTTP(S) REST endpoints and is intended to connect to the configured cluster. Generation and embeddings both use Gemini, through their existing separate SDK clients.
 
 ```text
 AI-Chat-Bot/
@@ -119,6 +120,7 @@ AI-Chat-Bot/
 │   ├── RAG.md
 │   ├── scripts/
 │   │   ├── check-memory.mjs
+│   │   ├── check-auth.mjs
 │   │   ├── check-qdrant.js
 │   │   ├── e2e-test.mjs
 │   │   └── migrate-chats.js
@@ -184,6 +186,8 @@ AI-Chat-Bot/
         ├── main.jsx
         ├── theme.js
         ├── index.css
+        ├── public.css
+        ├── public-theme.css
         ├── Pages/
         │   ├── Home.jsx
         │   ├── Login.jsx
@@ -199,7 +203,11 @@ AI-Chat-Bot/
         │   └── document-attachments.js
         └── components/
             ├── Header.jsx
-            ├── shared/
+            ├── public/
+            │   ├── Brand.jsx
+            │   ├── ProductPreview.jsx
+            │   ├── AuthLayout.jsx
+            │   └── AuthForm.jsx
             └── chat/
                 ├── Sidebar.jsx
                 ├── ConversationItem.jsx
@@ -330,7 +338,9 @@ Production frontend output is produced by `npm run build` in `frontend`. `npm ru
 | `backend` | `npm run qdrant:init` | Initialize a missing compatible collection |
 | `backend` | `npm run migrate -- --dry-run` | Inspect legacy embedded chats without data writes |
 | `backend` | `npm run migrate` | Move eligible `User.chats` records into conversation/message collections |
-| `backend` | `node --test scripts/check-memory.mjs` | Focused offline memory checks; not a package script |
+| `backend` | `npm test` | All offline auth and memory checks; no external services or AI calls |
+| `backend` | `node --test scripts/check-memory.mjs` | Focused offline memory checks |
+| `backend` | `node --test scripts/check-auth.mjs` | Isolated auth/router checks with mocked MongoDB; no network or AI calls |
 | `backend` | `npm run test:api` | Live API tests; creates users and can spend Gemini quota |
 | `frontend` | `npm run dev` | Vite development server |
 | `frontend` | `npm run build` | Production frontend build |
@@ -862,7 +872,7 @@ MongoDB stores application records and ownership; Qdrant stores search vectors p
 
 | Model / usual collection | Important fields and purpose | Indexes and timestamps |
 |---|---|---|
-| `User` / `users` | `name`, unique `email`, bcrypt `password` hash, legacy embedded `chats[{id,role,content}]` | Unique email; no schema timestamps |
+| `User` / `users` | `name`, unique `email`, bcrypt `password` hash (excluded from selections by default), legacy embedded `chats[{id,role,content}]` | Unique email; no schema timestamps |
 | `Conversation` / `conversations` | Required ObjectId `userId`, `title` (max 120), `documentIds[]` refs, preview `lastMessage` (max 280), `lastMessageAt`, `messageCount`, `isLegacy` | `userId`, `lastMessageAt`, compound `{userId:1,lastMessageAt:-1,_id:-1}`; timestamps |
 | `Message` / `messages` | ObjectId `conversationId` and `userId`, `role`, `content`, `status`, `legacyId`, `rag`, `documentIds[]`, embedded `sources[]` | `conversationId`, `userId`, compound `{conversationId:1,_id:-1}`; timestamps |
 | `Document` / `documents` | ObjectId `userId`, original/storage filenames, SHA-256 `contentHash`, size/MIME, page/chunk counts, `status`, safe error, processing/deletion deadlines | `{userId:1,createdAt:-1}` and partial unique `{userId:1,contentHash:1}` for string hashes; timestamps |
@@ -942,13 +952,13 @@ All routes below are relative to **`/api/v1`**. “Session” means the signed `
 
 | Method | Endpoint | Auth | Request | Success response / purpose |
 |---|---|---|---|---|
-| GET | `/user` | **None** | None | `{status,message,data: users}`; existing raw user-list route; see security warning |
+| GET | `/user` | Session | None | `{status,message,data:[{id,name,email}]}`; authenticated account only |
 | POST | `/user/signup` | None | `{name,email,password}` | 201 `{message,name,email}` and signed session cookie |
-| POST | `/user/login` | None | `{email,password}` | 200 `{message,name,email,token}` and cookie |
+| POST | `/user/login` | None | `{email,password}` | 200 `{message,name,email}` and signed HTTP-only cookie; no token in JSON |
 | GET | `/user/auth-status` | Session | None | `{message:"OK",name,email}` |
-| GET | `/user/logout` | Session | None | `{message:"OK",name,email}` and cookie removal |
+| GET | `/user/logout` | Session | None | `{message:"OK"}` and cookie removal |
 
-Signup requires a name, valid trimmed email, and a trimmed password of at least six characters. Login uses email/password validation too. Existing duplicate-user signup returns 401, unknown-user login 401, and incorrect password 403. Some legacy user-controller exceptions return HTTP 200 with an error/cause field; do not treat every 200 as a successful authenticated action.
+Signup requires a trimmed name of 1–100 characters, a valid trimmed email of at most 254 characters, and a trimmed password of at least six characters. New signup passwords must also fit bcrypt's 72-byte input limit; legacy longer passwords remain accepted on login. Password trimming is retained for compatibility with existing stored hashes. New emails are stored lowercase; exact email matching followed by an escaped case-insensitive fallback preserves existing mixed-case accounts and their IDs. Duplicate signup returns 409, including unique-index races. Unknown-user and incorrect-password login return the same safe 401 message. Authentication service failures return a safe 503. Signup issues the same seven-day session as login. Confirm-password matching is a client-side check and the confirmation is not sent to the server.
 
 ### Conversations and messages
 
@@ -1103,7 +1113,7 @@ These routes exist for compatibility. Their message validator only checks nonemp
 
 Protected route groups use `verifyToken`. Conversation controllers resolve parent ownership before reading history or mutating child records; wrong-owner conversations/messages normally appear as 404. Document and memory lookups/deletions include authenticated ownership. IDs and validation failures can instead produce 400/422 before lookup.
 
-New service errors generally return `{"message":"..."}`, optionally `errors`. Express-validator returns **`{"errors":[...]}` with HTTP 422**, without necessarily including a top-level message. Standard validator entries include `type, value, msg, path, location`. Legacy user/chat handlers have additional inconsistent shapes; see the limitations below.
+New service errors generally return `{"message":"..."}`, optionally `errors`. Express-validator returns **`{"errors":[...]}` with HTTP 422**, without necessarily including a top-level message. Validator entries expose `type, msg, path, location`; submitted values are omitted so passwords are not echoed. Legacy chat handlers have additional inconsistent shapes; see the limitations below.
 
 ## Frontend architecture
 
@@ -1122,6 +1132,7 @@ New service errors generally return `{"message":"..."}`, optionally `errors`. Ex
 | `MessageList.jsx` / `MessageBubble.jsx` | History/stream display, copy/regenerate/delete, source labels, failed/incomplete status |
 | `MarkdownContent.jsx` / `CodeBlock.jsx` | GFM Markdown, safe external-link attributes, Prism highlighting, plain-text fallback, clipboard |
 | `MemoryDialog.jsx` / `TopBar.jsx` | View/refresh/pause/delete/clear saved memory |
+| `components/public/` | Shared public brand, illustrative document preview, auth layout, and email-password forms |
 | `helpers/api.js` | REST helpers, multipart requests, error normalization, SSE Fetch/parser |
 
 Paths without a prefix in this table are relative to the corresponding frontend context/components/helpers directories listed in the tree.
@@ -1130,13 +1141,14 @@ Simplified request chain: **Composer → ChatContext → API helper → authenti
 
 Axios defaults to `withCredentials: true`; SSE Fetch sets `credentials: "include"` explicitly. Auth state waits for its initial check before redirecting from chat. Errors appear as toasts or inline alerts/status text. History-load errors clear the initial list when appropriate and show a toast; older-message failures leave already loaded content. Document management loads up to 100 records and has a manual refresh rather than a paginated document browser.
 
-The custom dark theme and responsive styles live in `frontend/src/theme.js` and `frontend/src/index.css`. Raw HTML parsing is not added to the Markdown pipeline. No document preview, drag-and-drop uploader, public PDF link, or separate memory settings page is implemented.
+The chat's dark theme and responsive styles live in `frontend/src/theme.js` and `frontend/src/index.css`. Landing/authentication layouts use `frontend/src/public.css`, with shared chat-derived theme tokens applied by `frontend/src/public-theme.css` and `App.jsx`. The landing preview uses fictional sample content, without backend requests. Raw HTML parsing is not added to the Markdown pipeline. No actual PDF viewer, drag-and-drop uploader, public PDF link, or separate memory settings page is implemented.
 
 ## Security and data isolation
 
 ### Implemented protections
 
 - Signup hashes passwords with bcrypt cost factor **10**; login verifies hashes.
+- Password hashes are excluded by default, explicitly selected only for login, and never serialized in user responses. The account-view route requires authentication and returns only the caller's public fields. JWTs are not returned in login JSON. Authentication failures use safe messages, non-success statuses, and redacted diagnostics.
 - JWT payloads contain account `id` and `email`, expire after **7 days**, and are verified with `JWT_SECRET`.
 - The `auth_token` cookie is signed with the cookie-parser secret, HTTP-only, path `/`, and expires after seven days. Production sets `Secure` and `SameSite=None`; development uses `SameSite=Lax` without Secure.
 - Protected conversation/document/memory APIs derive identity from `res.locals.jwtData.id`, not a frontend ownership claim.
@@ -1151,15 +1163,13 @@ The custom dark theme and responsive styles live in `frontend/src/theme.js` and 
 
 These are limitations found in code, not protections already implemented:
 
-1. **`GET /api/v1/user` is unauthenticated and returns raw `User.find()` results.** The user schema does not exclude `password`, so password hashes and legacy embedded chats can be exposed. Restrict/remove this route and select only approved fields before public deployment.
-2. Login also returns its JWT in the JSON body. Although the frontend uses cookies, this duplicates the credential outside the HTTP-only channel.
-3. Some legacy user/chat error handlers return raw `error.message`/`cause` and even HTTP 200 for failures. The central handler can also return an unrecognized exception's message; error redaction is not comprehensive application-wide. Conversation/Gemini handlers still have raw server error logging.
-4. No explicit CSRF-token middleware, account-level chat rate limiter, security-header middleware, or application encryption-at-rest layer was found. CORS and cookies alone should not be described as complete CSRF protection; production SameSite=None needs particular attention.
-5. Multi-record chat deletion/migration and local-file/vector/MongoDB changes are not cross-system transactions. Partial failures and process crashes require operational handling.
-6. Memory filters and PDF-grounding instructions are not formal defenses against malicious or misunderstood text.
-7. API keys, private PDF payloads in Qdrant, MongoDB backups, logs, and local PDF storage need deployment access controls and appropriate retention/encryption policies. These are operator responsibilities, not verified infrastructure features.
+1. Some legacy chat error handlers return raw `error.message`/`cause`. The central handler can also return an unrecognized exception's message; error redaction is not comprehensive application-wide. Conversation/Gemini handlers still have raw server error logging.
+2. No explicit CSRF-token middleware, account-level rate limiter, security-header middleware, or application encryption-at-rest layer was found. CORS and cookies alone should not be described as complete CSRF protection; production SameSite=None needs particular attention.
+3. Multi-record chat deletion/migration and local-file/vector/MongoDB changes are not cross-system transactions. Partial failures and process crashes require operational handling.
+4. Memory filters and PDF-grounding instructions are not formal defenses against malicious or misunderstood text.
+5. API keys, private PDF payloads in Qdrant, MongoDB backups, logs, and local PDF storage need deployment access controls and appropriate retention/encryption policies. These are operator responsibilities, not verified infrastructure features.
 
-No security fixes or configuration changes were made as part of this documentation update.
+The public-page/authentication redesign addressed account-response exposure and unsafe authentication error handling; it did not change RAG processing or collection configuration. The remaining recommendations above are not implemented protections.
 
 ## Errors and known limitations
 
@@ -1197,20 +1207,24 @@ No OCR, advanced table/image understanding, hybrid/BM25 retrieval, reranking, La
 
 | Check | Run from | Coverage and side effects |
 |---|---|---|
+| `npm test` | `backend` | Runs both offline suites below; no external services or provider requests |
 | `node --test scripts/check-memory.mjs` | `backend` | Eight focused offline checks: informal/explicit extraction, secret/opt-out exclusions, conflicts/corrections, expiry/ranking, schema bounds, owner isolation/management/races/fail-open with a simulated database, and mocked complete/streaming prompt integration. Fetch is blocked. |
+| `node --test scripts/check-auth.mjs` | `backend` | Ten socket-free router checks for hashing, duplicate registration, identity, legacy mixed-case/long-password login, validation, account access, JWT/cookie expiry/flags/logout, and safe failures. MongoDB is mocked; no AI calls. |
 | `npm run qdrant:check` | `backend` | Real read-only Qdrant connectivity/config inspection; no embeddings/Gemini |
 | `npm run qdrant:init` | `backend` | Real collection creation if absent; not a read-only test |
 | `npm run test:api` | `backend` | Live signup/session/conversation/validation/history/regeneration/streaming/ownership/legacy checks; can call Gemini |
 | `npm run lint` | `frontend` | ESLint; not a browser or backend integration test |
 | `npm run build` | `frontend` | Vite compilation; not live service verification |
 
-During this README update, the **eight offline memory checks were run and passed**. Documentation paths, environment references, API declarations, numerical parameters, Markdown structure, and diagram syntax were inspected/cross-checked. No live MongoDB, Gemini, embedding, Qdrant, PDF upload, browser workflow, production build, or full API suite was run for this documentation change. Offline stubs do not prove real persistence or model behavior.
+Offline suites exercise authentication, personal memory, and mocked normal/streaming generation. They do not prove live MongoDB persistence, Gemini availability, embedding correctness, or Qdrant/PDF integration. The frontend build and lint commands check source compatibility, not deployed service behavior. See [the cleanup report](CLEANUP_REPORT.md) for the checks performed during codebase cleanup.
 
-The live API script defaults to `TEST_BASE=http://localhost:3000/api/v1` and reports some provider-dependent checks as skipped when unavailable. Despite its opening comment, it does **not** delete the test accounts it creates; it clears some conversation data, and one test user's data may remain. Use a disposable environment and inspect cleanup needs. It does not cover the full PDF pipeline or live persistent-memory behavior. `backend/tmp-pf.mjs` is also an ad hoc live provider-failure probe with repeated generation requests, not an offline check; do not use it as a quota-free health check.
+The live API script defaults to `TEST_BASE=http://localhost:3000/api/v1` and reports some provider-dependent checks as skipped when unavailable. It does **not** delete the test accounts it creates; it clears some conversation data, and one test user's data may remain. Use a disposable environment and inspect cleanup needs. It does not cover the full PDF pipeline or live persistent-memory behavior.
 
 ### Minimal manual verification
 
-Run only when you choose to use provider quota:
+The chat/PDF steps below use provider quota; authentication checks do not:
+
+For the redesigned authentication pages, restart the backend/frontend at their configured origins, register a test account, confirm that signup opens the existing workspace, log out and back in, and check duplicate-email and incorrect-password errors. These auth operations do not call Gemini. No new dependencies, environment variables, or database migrations are required.
 
 1. **Normal chat:** sign in, send one short message, verify streamed rendering, reload the conversation, and inspect saved history. Stop/regenerate are optional additional checks.
 2. **PDF:** initialize/check Qdrant if needed, upload one small text-based PDF, wait for Ready, ask a question whose answer appears in it, and compare the displayed page to the original. A duplicate ready upload should reuse its record. Actual ingestion and each RAG question consume embedding quota.

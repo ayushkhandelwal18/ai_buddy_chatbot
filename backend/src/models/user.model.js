@@ -19,7 +19,7 @@ const chatsSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: true, select: false },
   chats: [chatsSchema], //chatschema ko userschema ke sath link kara hai
 });
 

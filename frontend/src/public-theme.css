@@ -1,0 +1,382 @@
+/* Home, login, and signup share tokens from the existing chat theme via App.jsx.
+   These styles never apply to the chat workspace. */
+.themed-public-shell {
+  color-scheme: var(--public-mode);
+  background: var(--public-background);
+  color: var(--public-ink);
+  font-family: var(--public-font);
+}
+.themed-public-shell :focus-visible {
+  outline: 2px solid var(--public-blue);
+  outline-offset: 4px;
+}
+.themed-public-shell .public-header {
+  background: var(--public-header);
+  border-color: var(--public-line);
+  backdrop-filter: blur(10px);
+}
+.themed-public-shell .public-brand { letter-spacing: var(--public-heading-spacing); }
+.themed-public-shell .public-brand-mark {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+  border: 1px solid var(--public-primary-border);
+  box-shadow: none;
+}
+.themed-public-shell .brand-hyphen,
+.themed-public-shell .desktop-nav a,
+.themed-public-shell .nav-login { color: var(--public-muted); }
+.themed-public-shell .desktop-nav a:hover,
+.themed-public-shell .desktop-nav a:active,
+.themed-public-shell .nav-login:hover,
+.themed-public-shell .nav-login:active,
+.themed-public-shell .mobile-navigation > a:hover,
+.themed-public-shell .mobile-navigation > a:active,
+.themed-public-shell .public-footer a:hover,
+.themed-public-shell .public-footer a:active { color: var(--public-blue); }
+.themed-public-shell .public-btn {
+  border-radius: var(--public-button-radius);
+  font-weight: var(--public-button-weight);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+.themed-public-shell .public-btn-primary {
+  background: var(--public-blue);
+  color: var(--public-primary-contrast);
+  box-shadow: none;
+}
+.themed-public-shell .public-btn-primary:hover {
+  background: var(--public-primary-hover);
+  color: var(--public-primary-contrast);
+  box-shadow: none;
+}
+.themed-public-shell .public-btn-primary:active { background: var(--public-blue); transform: translateY(0); }
+.themed-public-shell .public-btn-secondary {
+  background: var(--public-surface);
+  color: var(--public-ink);
+  border-color: var(--public-line);
+}
+.themed-public-shell .public-btn-secondary:hover {
+  background: var(--public-surface-hover);
+  border-color: var(--public-primary-border-hover);
+}
+.themed-public-shell .public-btn-secondary:active { background: var(--public-primary-soft); }
+.themed-public-shell .mobile-menu-toggle,
+.themed-public-shell .skip-link {
+  background: var(--public-surface);
+  color: var(--public-ink);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .mobile-menu-toggle:hover,
+.themed-public-shell .mobile-menu-toggle[aria-expanded="true"] { background: var(--public-primary-soft); color: var(--public-blue); }
+.themed-public-shell .mobile-navigation {
+  background: var(--public-background);
+  border-color: var(--public-line);
+  box-shadow: none;
+}
+.themed-public-shell .mobile-navigation > a { border-color: var(--public-line); }
+.themed-public-shell .mobile-navigation > a svg { color: var(--public-muted); }
+.themed-public-shell .hero-eyebrow {
+  background: var(--public-primary-soft);
+  border-color: var(--public-primary-border);
+  color: var(--public-blue);
+}
+.themed-public-shell .hero-copy h1,
+.themed-public-shell .section-heading h2,
+.themed-public-shell .rag-copy h2,
+.themed-public-shell .final-cta h2 {
+  font-weight: var(--public-heading-weight);
+  letter-spacing: var(--public-heading-spacing);
+}
+.themed-public-shell .hero-copy h1 { font-size: clamp(40px, 4.3vw, 58px); }
+.themed-public-shell .hero-notes,
+.themed-public-shell .hero-notes svg { color: var(--public-muted); }
+.themed-public-shell .preview-orbit { display: none; }
+.themed-public-shell .product-window {
+  background: var(--public-background);
+  border-color: var(--public-line);
+  border-radius: var(--public-radius);
+  box-shadow: none;
+}
+.themed-public-shell .preview-window-bar {
+  background: var(--public-sidebar);
+  color: var(--public-muted);
+  border-color: var(--public-line);
+}
+.themed-public-shell .window-dots i:first-child { background: var(--public-error); }
+.themed-public-shell .window-dots i:nth-child(2) { background: var(--public-warning); }
+.themed-public-shell .window-dots i:last-child { background: var(--public-success); }
+.themed-public-shell .preview-demo-tag { border-color: var(--public-line); }
+.themed-public-shell .preview-sidebar {
+  background: var(--public-surface);
+  border-color: var(--public-line);
+}
+.themed-public-shell .preview-brand svg { color: var(--public-blue); }
+.themed-public-shell .preview-new-chat {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+  border-color: var(--public-primary-border);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .preview-sidebar-label,
+.themed-public-shell .preview-nav-item,
+.themed-public-shell .preview-sidebar-bottom,
+.themed-public-shell .preview-chat-heading svg { color: var(--public-muted); }
+.themed-public-shell .preview-nav-active {
+  background: var(--public-primary-soft);
+  color: var(--public-ink);
+}
+.themed-public-shell .preview-person {
+  background: var(--public-secondary-soft);
+  color: var(--public-secondary);
+}
+.themed-public-shell .preview-document {
+  background: var(--public-surface);
+  border-color: var(--public-line);
+  border-radius: var(--public-radius);
+}
+.themed-public-shell .pdf-icon {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .preview-document > div > span { color: var(--public-success); }
+.themed-public-shell .preview-document .file-extension { color: var(--public-muted); }
+.themed-public-shell .preview-question {
+  background: var(--public-primary-soft);
+  color: var(--public-ink);
+  border: 1px solid var(--public-primary-border);
+  border-radius: 18px 18px 4px 18px;
+}
+.themed-public-shell .preview-answer-icon {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+  border: 1px solid var(--public-primary-border);
+}
+.themed-public-shell .preview-answer-name,
+.themed-public-shell .preview-answer li span { color: var(--public-muted); }
+.themed-public-shell .preview-answer p { color: var(--public-ink); }
+.themed-public-shell .preview-source {
+  background: var(--public-surface);
+  color: var(--public-muted);
+  border-color: var(--public-line);
+}
+.themed-public-shell .preview-source b { color: var(--public-muted); }
+.themed-public-shell .preview-composer {
+  background: var(--public-surface);
+  border-color: var(--public-line);
+  color: var(--public-muted);
+  border-radius: var(--public-radius);
+}
+.themed-public-shell .preview-composer > svg { color: var(--public-muted); }
+.themed-public-shell .preview-send {
+  background: var(--public-blue);
+  color: var(--public-primary-contrast);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .product-figure figcaption,
+.themed-public-shell .product-figure figcaption > span:last-child { color: var(--public-muted); }
+.themed-public-shell .caption-dot { background: var(--public-blue); }
+.themed-public-shell .technology-strip > span,
+.themed-public-shell .technology-strip > div > span,
+.themed-public-shell .technology-strip p { color: var(--public-muted); }
+.themed-public-shell .technology-strip strong { color: var(--public-ink); }
+.themed-public-shell .technology-strip svg { color: var(--public-blue); }
+.themed-public-shell .technology-strip i { background: var(--public-line); }
+.themed-public-shell .section-eyebrow { color: var(--public-blue); }
+.themed-public-shell .feature-card {
+  background: var(--public-surface);
+  border-color: var(--public-line);
+  border-radius: var(--public-radius);
+  box-shadow: none;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.themed-public-shell .feature-card:hover {
+  border-color: var(--public-primary-border-hover);
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+.themed-public-shell .feature-icon,
+.themed-public-shell .step-icon,
+.themed-public-shell .cta-spark {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+  border: 1px solid var(--public-primary-border);
+  border-radius: var(--public-button-radius);
+  box-shadow: none;
+}
+.themed-public-shell .feature-card h3,
+.themed-public-shell .how-steps h3 { letter-spacing: var(--public-heading-spacing); }
+.themed-public-shell .feature-tag,
+.themed-public-shell .feature-tag svg {
+  color: var(--public-muted);
+  border-color: var(--public-line);
+}
+.themed-public-shell .how-section {
+  background: var(--public-sidebar);
+  border-color: var(--public-line);
+}
+.themed-public-shell .how-steps li { border-color: var(--public-line); }
+.themed-public-shell .how-steps li:not(:last-child)::after {
+  background: none;
+  height: 0;
+  border-top: 1px dashed var(--public-line);
+}
+.themed-public-shell .step-number { background: var(--public-sidebar); color: var(--public-muted); }
+.themed-public-shell .step-detail { color: var(--public-muted); }
+.themed-public-shell .rag-section {
+  background: var(--public-surface);
+  color: var(--public-ink);
+  border-color: var(--public-line);
+  border-radius: var(--public-radius);
+}
+.themed-public-shell .rag-copy .section-eyebrow { color: var(--public-blue); }
+.themed-public-shell .rag-copy > p { color: var(--public-muted); }
+.themed-public-shell .rag-copy .rag-footnote { color: var(--public-muted); border-color: var(--public-primary-border); }
+.themed-public-shell .rag-link { color: var(--public-blue) !important; }
+.themed-public-shell .rag-link:hover { color: var(--public-primary-hover) !important; }
+.themed-public-shell .pipeline-label,
+.themed-public-shell .pipeline-label > span:last-child { color: var(--public-muted); }
+.themed-public-shell .pipeline-node {
+  background: var(--public-background);
+  color: var(--public-ink);
+  border-color: var(--public-line);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .pipeline-node svg { color: var(--public-blue); }
+.themed-public-shell .pipeline-node:not(:last-child)::after { color: var(--public-muted); }
+.themed-public-shell .vector-index {
+  background: var(--public-primary-soft);
+  border-color: var(--public-primary-border);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .vector-dot-grid { color: var(--public-blue); }
+.themed-public-shell .vector-index > div > span,
+.themed-public-shell .vector-index .index-label,
+.themed-public-shell .pipeline-result { color: var(--public-muted); }
+.themed-public-shell .pipeline-result svg { color: var(--public-success); }
+.themed-public-shell .cta-note,
+.themed-public-shell .footer-top nav,
+.themed-public-shell .footer-bottom,
+.themed-public-shell .footer-bottom a { color: var(--public-muted); }
+
+@media (max-width: 900px) {
+  .themed-public-shell .hero-copy h1 { font-size: clamp(44px, 7.5vw, 66px); }
+}
+@media (max-width: 480px) {
+  .themed-public-shell .hero-copy h1 { font-size: clamp(30px, 9.5vw, 42px); }
+}
+
+/* The shared login/signup layout uses the same surfaces and controls as chat. */
+.themed-public-shell .auth-story,
+.themed-public-shell .auth-form-content {
+  background: var(--public-surface);
+  border: 1px solid var(--public-line);
+  border-radius: var(--public-radius);
+  box-shadow: none;
+}
+.themed-public-shell .auth-form-content {
+  max-width: 440px;
+  padding: var(--public-form-padding);
+}
+.themed-public-shell .auth-form-content h1,
+.themed-public-shell .auth-story h2 {
+  font-weight: var(--public-heading-weight);
+  letter-spacing: var(--public-heading-spacing);
+}
+.themed-public-shell .auth-form-content h1 { font-size: 32px; }
+.themed-public-shell .auth-story > p,
+.themed-public-shell .auth-visual-file > div > span,
+.themed-public-shell .auth-visual-answer p,
+.themed-public-shell .auth-visual-caption,
+.themed-public-shell .auth-benefits,
+.themed-public-shell .auth-switch,
+.themed-public-shell .auth-session-note,
+.themed-public-shell .auth-footer,
+.themed-public-shell .field-hint { color: var(--public-muted); }
+.themed-public-shell .back-home:hover { color: var(--public-blue) !important; }
+.themed-public-shell .auth-visual-file,
+.themed-public-shell .auth-visual-answer {
+  background: var(--public-background);
+  border-color: var(--public-line);
+  border-radius: var(--public-radius);
+  box-shadow: none;
+}
+.themed-public-shell .ready-icon { color: var(--public-success); }
+.themed-public-shell .auth-visual-connector { color: var(--public-blue); }
+.themed-public-shell .auth-visual-connector > span { background: var(--public-primary-border); }
+.themed-public-shell .auth-spark {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .auth-source-chip {
+  background: var(--public-primary-soft);
+  color: var(--public-muted);
+  border-color: var(--public-primary-border);
+}
+.themed-public-shell .auth-benefits { border-color: var(--public-line); }
+.themed-public-shell .auth-benefits svg { color: var(--public-blue); }
+.themed-public-shell .auth-field { margin-bottom: var(--public-field-gap); }
+.themed-public-shell .auth-field > label { color: var(--public-ink); }
+.themed-public-shell .auth-input-wrap {
+  background: var(--public-background);
+  border-color: var(--public-line);
+  border-radius: var(--public-button-radius);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.themed-public-shell .auth-input-wrap:hover { border-color: var(--public-primary-border-hover); }
+.themed-public-shell .auth-input-wrap:focus-within {
+  border-color: var(--public-blue);
+  box-shadow: 0 0 0 1px var(--public-primary-border);
+}
+.themed-public-shell .auth-input-wrap input {
+  color: var(--public-ink);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .auth-input-wrap input::placeholder { color: var(--public-muted); }
+.themed-public-shell .auth-input-wrap input:focus-visible { outline: none; }
+.themed-public-shell .password-toggle {
+  color: var(--public-muted);
+  border-radius: 0 var(--public-button-radius) var(--public-button-radius) 0;
+}
+.themed-public-shell .password-toggle:hover,
+.themed-public-shell .password-toggle[aria-pressed="true"] {
+  background: var(--public-primary-soft);
+  color: var(--public-blue);
+}
+.themed-public-shell .auth-input-wrap.has-error { border-color: var(--public-error); }
+.themed-public-shell .auth-input-wrap.has-error:focus-within { box-shadow: 0 0 0 1px var(--public-error-border); }
+.themed-public-shell .field-error { color: var(--public-error); }
+.themed-public-shell .auth-error {
+  color: var(--public-error);
+  background: var(--public-error-soft);
+  border-color: var(--public-error-border);
+  border-radius: var(--public-button-radius);
+}
+.themed-public-shell .auth-switch a { color: var(--public-blue); }
+.themed-public-shell .auth-switch a:hover { color: var(--public-primary-hover); }
+.themed-public-shell .public-btn:disabled,
+.themed-public-shell .password-toggle:disabled {
+  color: var(--public-disabled);
+  background: var(--public-disabled-background);
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+.themed-public-shell .auth-input-wrap:has(input:disabled) { border-color: var(--public-line); box-shadow: none; }
+.themed-public-shell .auth-input-wrap input:disabled { background: transparent; color: var(--public-disabled); }
+/* Keep browser autofill inside the same dark input surface. */
+.themed-public-shell .auth-input-wrap input:autofill {
+  box-shadow: 0 0 0 1000px var(--public-background) inset;
+  -webkit-text-fill-color: var(--public-ink);
+  caret-color: var(--public-ink);
+}
+@media (max-width: 900px) {
+  .themed-public-shell .auth-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .themed-public-shell .auth-story { display: none; }
+}
+@media (max-width: 480px) {
+  .themed-public-shell .auth-page { padding-inline: 18px; }
+  .themed-public-shell .auth-form-content { padding: 24px 20px; }
+  .themed-public-shell .auth-form-content h1 { font-size: clamp(25px, 7.2vw, 30px); }
+  .themed-public-shell .auth-layout { padding-block: 32px; }
+}

@@ -5,7 +5,7 @@ import { memoryPrompt } from "./memory-policy.service.js";
  * Model + generation settings — unchanged from the original integration so
  * behaviour stays identical to the pre-redesign app.
  */
-export const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const GENERATION_CONFIG = {
   maxOutputTokens: 2048, // more space for code
@@ -24,7 +24,7 @@ const GENERATION_CONFIG = {
  *  - the "no markdown" rule became "use Markdown", because the new UI renders
  *    Markdown with syntax highlighting.
  */
-export const SYSTEM_INSTRUCTION = `You are AI-Buddy, not a generic AI model.
+const SYSTEM_INSTRUCTION = `You are AI-Buddy, not a generic AI model.
 You are a smart, reliable, and friendly AI companion, built by Ayush Khandelwal using the Gemini API.
 Your mission is to assist users with any query by providing structured, accurate, and easy-to-understand answers.
 
@@ -72,7 +72,7 @@ const HISTORY_LIMIT = Number(process.env.GEMINI_HISTORY_MESSAGES) || 20;
  * Turns whose answer never arrived (`status: "failed"`) are skipped: they stay
  * in the transcript for the user, but must not pollute the model context.
  */
-export const toGeminiHistory = (messages = []) =>
+const toGeminiHistory = (messages = []) =>
   messages
     .filter(
       (m) =>

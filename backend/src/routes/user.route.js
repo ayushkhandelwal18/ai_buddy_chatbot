@@ -5,7 +5,7 @@ import { verifyToken } from "../utils/token-manager.js";
 const userRoutes = Router();
 
 
-userRoutes.get("/",getAllUsers); // Route to get all users
+userRoutes.get("/", verifyToken, getAllUsers); // Safe view of the authenticated account only
 userRoutes.post("/signup", validate(signupValidator),usersignup);
 userRoutes.post("/login", validate(loginValidator),userlogin);
 userRoutes.get("/auth-status", verifyToken,verifyUser);

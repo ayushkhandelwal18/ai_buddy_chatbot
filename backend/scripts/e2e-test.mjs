@@ -5,8 +5,8 @@
  *   npm run test:api                # in another one
  *   TEST_BASE=http://localhost:3000/api/v1 npm run test:api
  *
- * The suite creates throw-away users and cleans up after itself. Checks that
- * need the AI provider are reported as SKIP when the provider is unreachable
+ * Run only in a disposable database: test accounts remain after the suite.
+ * Checks that need the AI provider are reported as SKIP when it is unreachable
  * (for example when the Gemini free-tier quota is exhausted).
  */
 const BASE = process.env.TEST_BASE || "http://localhost:3000/api/v1";
@@ -83,7 +83,6 @@ const unique = Date.now();
 
   r = await req("/conversations", { method: "POST", body: { title: "My custom title" } });
   check("create titled conversation", r.status === 201 && r.json.conversation.title === "My custom title");
-  const titledId = r.json.conversation.id;
 
   r = await req("/conversations");
   check("list conversations", r.status === 200 && r.json.conversations.length >= 2, `n=${r.json.conversations?.length}`);
