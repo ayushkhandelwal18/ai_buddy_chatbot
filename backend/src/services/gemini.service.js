@@ -1,5 +1,6 @@
 import { googleAI } from "../config/geminiconfig.js";
 import { memoryPrompt } from "./memory-policy.service.js";
+import { getAuthenticatedProfile, profilePrompt } from "./profile-context.service.js";
 
 /**
  * Model + generation settings — unchanged from the original integration so
@@ -83,18 +84,19 @@ const toGeminiHistory = (messages = []) =>
       parts: [{ text: m.content }],
     }));
 
-const buildModel = ({ systemInstruction, responseMimeType, memoryContext } = {}) =>
+const buildModel = ({ systemInstruction, responseMimeType, memoryContext, profileContext } = {}) =>
   googleAI.getGenerativeModel({
     model: GEMINI_MODEL,
     generationConfig: { ...GENERATION_CONFIG, ...(responseMimeType ? { responseMimeType } : {}) },
-    systemInstruction: [SYSTEM_INSTRUCTION, memoryPrompt(memoryContext), systemInstruction].filter(Boolean).join("\n\n"),
+    systemInstruction: [SYSTEM_INSTRUCTION, memoryPrompt(memoryContext), profilePrompt(profileContext), systemInstruction].filter(Boolean).join("\n\n"),
   });
 
 /**
  * Non-streaming completion (used by the legacy endpoints and regenerate).
  */
-export const generateReply = async ({ history = [], message, systemInstruction, responseMimeType, signal, memoryContext }) => {
-  const model = buildModel({ systemInstruction, responseMimeType, memoryContext });
+export const generateReply = async ({ history = [], message, systemInstruction, responseMimeType, signal, memoryContext, userId, profileContext }) => {
+  const profile = profileContext === undefined ? await getAuthenticatedProfile(userId) : profileContext;
+  const model = buildModel({ systemInstruction, responseMimeType, memoryContext, profileContext: profile });
   const chat = model.startChat({ history: toGeminiHistory(history) });
   const options = signal || systemInstruction ? { ...(signal ? { signal } : {}), timeout: 60000 } : undefined;
   const result = await chat.sendMessage(message, options);
@@ -105,8 +107,9 @@ export const generateReply = async ({ history = [], message, systemInstruction, 
  * Streaming completion. Yields text chunks as they arrive.
  * `signal` lets the caller abort the upstream HTTP request (stop generation).
  */
-export const streamReply = async function* ({ history = [], message, signal, memoryContext }) {
-  const model = buildModel({ memoryContext });
+export const streamReply = async function* ({ history = [], message, signal, memoryContext, userId }) {
+  const profileContext = await getAuthenticatedProfile(userId);
+  const model = buildModel({ memoryContext, profileContext });
   const chat = model.startChat({ history: toGeminiHistory(history) });
   const result = await chat.sendMessageStream(message, { signal });
 

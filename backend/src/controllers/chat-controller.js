@@ -54,7 +54,7 @@ export const generateChatCompletion = async (req, res, next) => {
     });
 
     const memoryContext = await prepareMemoryTurn({ userId, conversationId: conversation._id, userMessage, text: message });
-    const reply = await generateReply({ history, message, memoryContext });
+    const reply = await generateReply({ userId, history, message, memoryContext });
 
     await appendMessage({
       conversationId: conversation._id,

@@ -152,7 +152,7 @@ export const sendConversationMessage = async (req, res) => {
       const answer = await answerRagQuestion({ userId, question: text, documentIds, history, memoryContext });
       reply = answer.content;
       sources = answer.sources;
-    } else reply = await generateReply({ history, message: text, memoryContext });
+    } else reply = await generateReply({ userId, history, message: text, memoryContext });
   } catch (error) {
     if (!rag) console.error("[gemini] generateReply failed:", error);
     // The user's message stays in the transcript but is flagged as failed, so
@@ -265,6 +265,7 @@ export const streamConversationMessage = async (req, res) => {
         }
       } else {
         for await (const chunk of streamReply({
+          userId,
           history,
           message: text,
           signal: abortController.signal,
@@ -395,7 +396,7 @@ export const regenerateConversationMessage = async (req, res) => {
       const answer = await answerRagQuestion({ userId, question: target.content, documentIds, history, memoryContext });
       reply = answer.content;
       sources = answer.sources;
-    } else reply = await generateReply({ history, message: target.content, memoryContext });
+    } else reply = await generateReply({ userId, history, message: target.content, memoryContext });
   } catch (error) {
     if (!rag) console.error("[gemini] regenerate failed:", error);
     await syncConversationMeta(conversation._id);
