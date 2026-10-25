@@ -191,7 +191,8 @@ export const listMessages = async (
  * message we are about to send must not appear in its own history.
  */
 export const getRecentMessages = async (conversationId, limit, before) => {
-  const query = { conversationId };
+  // Apply the existing context count to usable turns, not failed placeholders.
+  const query = { conversationId, status: { $ne: "failed" }, role: { $in: ["user", "assistant"] } };
   if (before) {
     query._id = { $lt: before };
   }

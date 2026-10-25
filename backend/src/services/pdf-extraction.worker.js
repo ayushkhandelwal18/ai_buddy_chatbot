@@ -1,10 +1,14 @@
 import { parentPort, workerData } from "node:worker_threads";
-import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 
 let task;
+let result;
 try {
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  task = getDocument({ data: new Uint8Array(await readFile(workerData)),
+  // PDF.js's installed Node file transport supports bounded range reads.
+  // Avoid an extra whole-file Buffer/Uint8Array copy in the extraction worker.
+  task = getDocument({ url: pathToFileURL(workerData).href,
+    disableStream: true, disableAutoFetch: true, rangeChunkSize: 64 * 1024,
     useSystemFonts: false, disableFontFace: true,
     stopAtErrors: true, verbosity: 0 });
   const pdf = await task.promise;
@@ -22,12 +26,14 @@ try {
     page.cleanup();
   }
   if (pages.reduce((count, page) => count + (page.text.match(/[\p{L}\p{N}]/gu)?.length || 0), 0) < 20) {
-    parentPort.postMessage({ error: "No meaningful extractable text found. Scanned/image-only PDFs require OCR, which is not implemented." });
-  } else parentPort.postMessage({ pages, pageCount: pdf.numPages });
+    result = { error: "No meaningful extractable text found. Scanned/image-only PDFs require OCR, which is not implemented." };
+  } else result = { pages, pageCount: pdf.numPages };
 } catch (error) {
-  parentPort.postMessage({ error: error.message === "limit"
+  result = { error: error.message === "limit"
     ? "PDF exceeds the processing limit of 500 pages or 2 million text characters."
-    : "PDF could not be read. It may be malformed, encrypted, or unsupported." });
+    : "PDF could not be read. It may be malformed, encrypted, or unsupported." };
 } finally {
   await task?.destroy().catch(() => {});
 }
+// Close parser file handles before the parent removes temporary files (Windows).
+parentPort.postMessage(result);

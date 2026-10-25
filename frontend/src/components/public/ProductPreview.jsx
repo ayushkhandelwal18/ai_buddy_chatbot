@@ -22,7 +22,7 @@ export default function ProductPreview() {
             <span className="preview-answer-icon" aria-hidden="true"><MdAutoAwesome /></span>
             <div><span className="preview-answer-name">AI-Buddy</span><p>The plan focuses on three priorities:</p>
               <ol><li><strong>Simpler onboarding</strong><span>Help new users reach their first insight.</span></li><li><strong>Better document search</strong><span>Make relevant information easier to find.</span></li><li><strong>Clearer source references</strong><span>Keep answers connected to their context.</span></li></ol>
-              <div className="preview-source"><MdDescription /><span>Product strategy.pdf <b>·</b> page 12 <b>·</b> [S1]</span></div>
+              <div className="preview-source"><MdDescription /><span>Product strategy.pdf <b>·</b> [Page 12]</span></div>
             </div>
           </div>
           <div className="preview-composer" aria-hidden="true"><MdAdd /><span>Ask a follow-up question…</span><span className="preview-send"><MdArrowUpward /></span></div>

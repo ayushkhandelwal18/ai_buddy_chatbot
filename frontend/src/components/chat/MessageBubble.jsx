@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Avatar, Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { MdCheck, MdContentCopy, MdDeleteOutline, MdRefresh } from "react-icons/md";
 import MarkdownContent from "./MarkdownContent";
+import { displayCitations, sourceLabels } from "../../helpers/citations";
 
 /**
  * A single message.
@@ -20,10 +21,13 @@ function MessageBubble({
   const [copied, setCopied] = useState(false);
 
   const isUser = message.role === "user";
+  const content = !isUser && (message.rag || message.sources?.length)
+    ? displayCitations(message.content, message.sources) : message.content;
+  const sources = sourceLabels(message.sources);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message.content || "");
+      await navigator.clipboard.writeText(content || "");
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -119,16 +123,13 @@ function MessageBubble({
             overflowWrap: "anywhere",
           }}
         >
-          <MarkdownContent content={message.content} />
+          <MarkdownContent content={content} />
         </Box>
 
-        {!!message.sources?.length && <Box sx={{ mt: 1 }}>
+        {!!sources.length && <Box sx={{ mt: 1 }}>
           <Typography variant="caption" color="text.secondary">Sources</Typography>
-          {message.sources.map((source) => <Typography key={source.sourceId} variant="caption" sx={{ display: "block", overflowWrap: "anywhere" }}>
-            [{source.sourceId}] {source.sourceType === "memory"
-              ? `Saved memory · ${source.category} · ${source.key.includes(".") ? source.key.split(".")[0] : source.key.replaceAll("_", " ")}`
-              : <>{source.originalFilename}, {source.pageStart === source.pageEnd
-                ? `page ${source.pageStart}` : `pages ${source.pageStart}–${source.pageEnd}`} · chunk {source.chunkIndex + 1}</>}
+          {sources.map((source) => <Typography key={source.key} variant="caption" sx={{ display: "block", overflowWrap: "anywhere" }}>
+            {source.label}
           </Typography>)}
         </Box>}
 

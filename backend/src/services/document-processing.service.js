@@ -1,5 +1,5 @@
 import Document from "../models/document.model.js";
-import { pdfPath } from "../config/upload.config.js";
+import { removeTemporaryPdf } from "./pdf-storage.service.js";
 import { extractPdf } from "./pdf.service.js";
 import { chunkPages } from "./chunking.service.js";
 import { generateEmbeddings } from "./embedding.service.js";
@@ -31,7 +31,7 @@ export const expireInterruptedDocuments = (userId) => Document.updateMany({
   userId, status: { $in: ["uploaded", "processing"] }, processingDeadline: { $lt: new Date() },
 }, { $set: { status: "failed", processingError: "Processing was interrupted or timed out. Delete this document to clean up any partial chunks, then upload again." } });
 
-export const processDocument = async (document, release) => {
+export const processDocument = async (document, temporary, release) => {
   const scope = { _id: document._id, userId: document.userId };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15 * 60 * 1000);
@@ -44,7 +44,11 @@ export const processDocument = async (document, release) => {
     const claim = await Document.updateOne({ ...scope, status: "uploaded", processingDeadline: { $gt: new Date() } }, { $set: { status: "processing" } });
     if (claim.modifiedCount !== 1) throw new ApiError(409, "PDF processing reservation expired. Delete the document and upload again.");
     stage = "extract-text";
-    const { pages, pageCount } = await extractPdf(pdfPath(document.storageFilename), controller.signal);
+    const { pages, pageCount } = await extractPdf(temporary.path, controller.signal);
+    // Extraction is the last consumer of original bytes. Do not retain them
+    // during provider requests, and never mark Ready if their removal fails.
+    stage = "temporary-file-cleanup";
+    await removeTemporaryPdf(temporary.directory);
     checkpoint();
     stage = "chunk-text";
     const chunks = chunkPages(pages);
@@ -81,6 +85,13 @@ export const processDocument = async (document, release) => {
     catch (statusError) { logServiceError("document-processing.save-failure", statusError); }
   } finally {
     clearTimeout(timeout);
-    release();
+    try {
+      await removeTemporaryPdf(temporary.directory);
+    } catch (cleanupError) {
+      logServiceError("document-processing.temporary-cleanup", cleanupError);
+      try {
+        await Document.updateOne(scope, { $set: { status: "failed", processingError: "Temporary PDF cleanup failed. Check server temporary-storage permissions before retrying." } });
+      } catch (statusError) { logServiceError("document-processing.save-cleanup-failure", statusError); }
+    } finally { release(); }
   }
 };

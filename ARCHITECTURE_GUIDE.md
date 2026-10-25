@@ -1,9 +1,3 @@
-# AI-Buddy Technical Architecture Guide
-
-Source review date: **2026-10-25**. Project root: **B:\AI_BUDDY**.
-
-This guide describes the current working-tree implementation, including changes not yet committed. It is based on source, route registrations, models, configuration, package manifests/lockfiles, and maintained scripts—not feature claims in older documentation. **Implemented** means a code path exists; it does not mean a deployed service was tested. No credentials, private PDF contents, or user records are included. Only this guide was created for this documentation task.
-
 ## 1. Project Overview
 
 AI-Buddy is a MERN application: MongoDB stores application records, Express/Node exposes the API, and React renders the browser interface. Gemini generates answers. Qdrant stores searchable PDF chunk vectors.

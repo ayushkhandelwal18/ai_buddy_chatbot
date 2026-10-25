@@ -5,11 +5,13 @@ const itemKey = (prefix, value) => prefix + "." + createHash("sha256").update(no
 const privateContent = /\b(?:password|passphrase|secret|api[ _-]?key|auth(?:entication)?[ _-]?token|access[ _-]?token|bearer|private[ _-]?key|credit[ _-]?card|debit[ _-]?card|card[ _-]?number|bank[ _-]?account|routing[ _-]?number|cvv|ssn|aadhaar|social security|otp)\b|\b(?:sk-|AIza)[\w-]{10,}|\beyJ[\w-]+\.[\w-]+\.[\w-]+|\b\d(?:[ -]?\d){8,}\b|\b[\w-]{40,}\b/i;
 const untrustedInstruction = /ignore (?:all|previous|system)|system (?:prompt|instruction)|developer (?:message|instruction)|jailbreak|reveal.*(?:secret|prompt)/i;
 const optOut = /(?:do not|don't|never)\s+(?:save|store|remember)|off[- ]the[- ]record|\b(?:pretend|hypothetical|roleplay|for example|suppose|imagine)\b|```|^\s*>/i;
-const stripAddress = (text) => text.trim().replace(/^(?:(?:bro|hey|hi|hello|yo|buddy|dude|please)\b[\s,!:.-]+)+/i, "");
-const identityStart = /^(?:(?:actually|correction|update|to clarify|instead|remember(?: that)?)\s*[:,]?\s*)*(?:my (?:full )?name is|i am called|i'm called)\s+/i;
+const stripAddress = (text) => text.trim().replace(/^(?:(?:bro|hey|hi+|hello|yo|buddy|dude|please)\b[\s,!:.-]+)+/i, "");
+const identityStart = /^(?:(?:actually|correction|update|to clarify|instead|remember(?: that)?)\s*[:,]?\s*)*(?:my (?:full )?name is|i am called|i'm called|i am|i'm)\s+/i;
 const nicknameStart = /(?:,\s*|\s+)(?:and\s+)?(?=(?:you can call me|call me|my (?:preferred )?nickname is|i prefer to be called)\s+)/i;
 const displayName = (value) => value === value.toLowerCase()
   ? value.replace(/(^|[\s-])(\p{L})/gu, (_, separator, letter) => separator + letter.toUpperCase()) : value;
+// Bare introductions must look like names, not occupations, moods, or activities.
+const nonName = /\b(?:a|an|the|not|learning|studying|preparing|working|building|trying|looking|interested|ready|happy|sad|tired|fine|good|here|from|in|at|for|using|student|engineer|developer|intern|software|sorry|confused|unsure|excited|available|busy)\b/i;
 
 export const extractMemories = (input) => {
   if (typeof input !== "string" || input.length > 8000 || privateContent.test(input) || untrustedInstruction.test(input) || optOut.test(input)) return [];
@@ -36,6 +38,9 @@ export const extractMemories = (input) => {
     segment = segment.trim().replace(/^(?:(?:actually|correction|update|to clarify|instead|remember(?: that)?)\s*[:,]?\s*)+/i, "");
     let match;
     if ((match = /^(?:my (?:full )?name is(?: now)?|i am called|i'm called)\s+(.+)$/i.exec(segment))) add("personal", "name", displayName(match[1]), correction);
+    else if ((match = /^(?:i am|i'm)\s+([\p{L}][\p{L}'-]*(?:\s+[\p{L}][\p{L}'-]*){0,2})[.!]*$/iu.exec(segment)) && !nonName.test(match[1])) {
+      add("personal", "name", displayName(match[1]), correction);
+    }
     else if ((match = /^(?:(?:yes,?\s*)?you can call me|call me|my (?:preferred )?nickname is|i prefer to be called)\s+(.+)$/i.exec(segment))) {
       const nickname = match[1].replace(/\s+(?:as(?: (?:my|a))? nickname|for short)[.!\s]*$/i, "");
       add("personal", "nickname", displayName(nickname), correction, null, true);
@@ -60,6 +65,13 @@ export const extractMemories = (input) => {
       add("learning", itemKey("learned", match[1].replace(/[.!]+$/, "")), match[1], correction, 90, true);
     } else if ((match = /^(?:my (?:current )?goal is|i am working towards)\s+(.+)$/i.exec(segment))) {
       add("goals", "current_goal", match[1], correction, 30, true);
+    } else if ((match = /^(?:i(?:'m| am) (?:currently )?preparing for|my (?:upcoming )?interview is for|help me prepare for)\s+(?:an? |the |my )?(.{1,100}?\binterview)[.!]*$/i.exec(segment))) {
+      add("goals", "interview_preparation", match[1], correction, 30, true);
+    } else if ((match = /^(?:from my (?:resume|cv)\s*[-,:]\s*)?(?:please\s+)?(?:make|write|draft|create|generate|prepare)(?: me)?\s+(?:(?:an?|my)\s+)?(?:self[- ]?)?introduction\s+for\s+(?:an? |the |my )?(.{1,100}?\binterview)[.!]*$/i.exec(segment))) {
+      // The user's requested interview is context; no facts are extracted from the resume itself.
+      add("goals", "interview_preparation", match[1], correction, 30, true);
+    } else if ((match = /^i(?:'m| am) (?:currently )?(?:working on|building) (?:a |my )?project (?:called |named )?(.+)$/i.exec(segment))) {
+      add("projects", itemKey("project", match[1].replace(/[.!]+$/, "")), match[1], correction);
     } else if ((match = /^(?:i (?:now )?prefer|please (?:keep|make) (?:your )?(?:answers|responses))\s+(.+)$/i.exec(segment))) {
       const preference = match[1];
       if (/concise|brief|short|detailed|in[- ]depth/i.test(preference)) add("preferences", "response_length", /detailed|in[- ]depth/i.test(preference) ? "Detailed answers" : "Concise answers", correction, null, true);

@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 const documentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   originalFilename: { type: String, required: true, maxlength: 255 },
-  storageFilename: { type: String, required: true, select: false },
   contentHash: { type: String, select: false },
   fileSize: { type: Number, required: true },
   mimeType: { type: String, default: "application/pdf" },

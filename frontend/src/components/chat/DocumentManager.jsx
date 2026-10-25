@@ -34,7 +34,7 @@ export default function DocumentManager({ open, onClose, onChange }) {
         {doc.processingError && <Typography variant="caption" color="error" display="block">{doc.processingError}</Typography>}
         <Button size="small" color="error" disabled={busy || ["uploaded", "processing"].includes(doc.status)} onClick={() => remove(doc.id)}>Delete PDF</Button>
       </Box>)}
-      <Typography variant="caption" color="text.secondary">Removing an attachment from a question does not delete its uploaded file. Delete files here when no longer needed.</Typography>
+      <Typography variant="caption" color="text.secondary">Original PDFs are discarded after text extraction. Removing an attachment only changes the question context; delete documents here to remove their indexed chunks and metadata.</Typography>
     </DialogContent>
     <DialogActions><Button onClick={() => setRefresh((value) => value + 1)}>Refresh</Button><Button onClick={onClose}>Close</Button></DialogActions>
   </Dialog>;
