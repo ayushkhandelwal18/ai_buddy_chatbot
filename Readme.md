@@ -1,10 +1,9 @@
-# AI-Buddy
+# 🤖 AI-Buddy
 
-AI-Buddy is a MERN chatbot built by Ayush Khandelwal. It supports saved conversations, incremental Gemini responses, PDF question answering with page citations, and structured personal memory across an authenticated user's conversations.
+AI-Buddy is an AI-powered chatbot built using the MERN stack, Google Gemini API, Retrieval-Augmented Generation (RAG), and Qdrant. It supports real-time streaming responses, saved conversations, PDF-based question answering with page citations, and persistent user memory across conversations.
 
-Beyond basic chat, it loads recent conversation history and relevant memory from MongoDB, reads the authenticated account name from the User record, and retrieves semantically relevant PDF passages from Qdrant when documents are attached. These context sources remain separate.
+💡 Beyond basic chat, AI-Buddy combines recent conversation history and relevant personal memories from MongoDB with semantic PDF retrieval through Qdrant. It uses the authenticated user's account information to personalize responses while keeping conversation history, persistent memory, and document-based context separate.
 
-Repository: [ayushkhandelwal18/AI-Chat-Bot](https://github.com/ayushkhandelwal18/AI-Chat-Bot). Detailed architecture notes are in [ARCHITECTURE_GUIDE.md](ARCHITECTURE_GUIDE.md); this README describes the current source implementation.
 
 ## Architecture
 
@@ -211,7 +210,7 @@ QDRANT_COLLECTION=<collection-name>
 VITE_API_URL=<backend-origin>/api/v1
 ```
 
-For local defaults, the frontend origin is normally `http://localhost:5173` and backend base URL `http://localhost:3000/api/v1`. Match Vite's actual port and use a consistent hostname for cookies. Environment files are ignored by the application Git rules.
+For local defaults, the frontend origin is normally `http://localhost:5173` and backend base URL `http://localhost:3000/api/v1`. 
 
 ## Local setup
 
@@ -220,8 +219,8 @@ Prerequisites: Git, npm, compatible Node.js, MongoDB with permission to create s
 1. Clone:
 
    ```sh
-   git clone https://github.com/ayushkhandelwal18/AI-Chat-Bot.git
-   cd AI-Chat-Bot
+   git clone https://github.com/ayushkhandelwal18/ai_buddy_chatbot
+   cd ai_buddy_chatbot
    ```
 
 2. Install frontend dependencies:
@@ -264,9 +263,7 @@ Prerequisites: Git, npm, compatible Node.js, MongoDB with permission to create s
 
    Open Vite's printed URL, register/login, and use chat or attach a PDF and wait for Ready before submitting.
 
-For deployment, `frontend` provides `npm run build` and `npm run preview`; Express does not serve that bundle. Configure static hosting with SPA fallback, frontend API base, backend CORS origin, HTTPS for production cookies, and streaming without proxy buffering/timeouts. No specific hosted platform is configured. Original PDFs need no durable storage, but MongoDB/Qdrant must retain records/vectors for later chats.
 
-For old embedded `User.chats` data only, the existing script supports `npm run migrate -- --dry-run` and `npm run migrate` from `backend`. Fresh installations do not need migration; back up existing data because the multi-record migration is not transactional.
 
 ## Project structure
 
@@ -308,7 +305,6 @@ AI-Chat-Bot/
 ## Current limitations
 
 - Scanned/image-only PDFs need OCR, which is not implemented. There is no advanced image/diagram/table extraction or original-PDF viewer/download route.
-- PDF processing uses an in-process pool, not a durable queue. Crashes can interrupt indexing; stale status is expired later, and point/temp cleanup failures require retry or operator attention. MongoDB/Qdrant changes are not a cross-system transaction.
-- Retrieval embeds the current question without history-based query rewriting. Ambiguous follow-ups or weak nearest matches can produce insufficient context. There is no hybrid search, BM25, reranking, or generic embedding cache.
-- Memory is pattern-based and can miss unsupported statements. Conflicts need confirmation, and ordinary history uses a message-count limit rather than summarization/token accounting.
-- Grounding and sensitive-input guards are heuristic. Authenticated ownership checks exist, but no explicit CSRF-token middleware or account-level request rate limiter is implemented.
+- There is no hybrid search, BM25, reranking, or generic embedding cache.
+- Memory is pattern-based and can miss unsupported statements. 
+
